@@ -1,12 +1,15 @@
 import type { BrandTokens } from "@/lib/design-tokens";
 import type { SlideContent } from "@/lib/schemas/carousel";
+import { getSlot } from "@/lib/domain/layout";
 import { SlideIcon } from "@/components/icons/SlideIcon";
 import { NumberBadge } from "./primitives";
+import { LayoutSlot } from "./layout/LayoutSlot";
 import { SlideFrame } from "./SlideFrame";
 
 type Props = {
   tokens: BrandTokens;
   data: Extract<SlideContent, { template: "ribbon-steps" }>["data"];
+  layout?: Extract<SlideContent, { template: "ribbon-steps" }>["layout"];
 };
 
 const tones = [
@@ -16,7 +19,7 @@ const tones = [
   "var(--slide-surface)",
 ] as const;
 
-export function RibbonStepsSlide({ tokens, data }: Props) {
+export function RibbonStepsSlide({ tokens, data, layout }: Props) {
   return (
     <SlideFrame tokens={tokens}>
       <p
@@ -25,14 +28,16 @@ export function RibbonStepsSlide({ tokens, data }: Props) {
       >
         Proceso
       </p>
-      <h1
-        className="font-[family-name:var(--slide-font-display)] text-[52px] font-extrabold tracking-tight"
-        style={{ color: "var(--slide-ink)" }}
-      >
-        {data.headline}
-      </h1>
+      <LayoutSlot id="headline" layout={getSlot(layout, "headline")}>
+        <h1
+          className="slot-text font-[family-name:var(--slide-font-display)] text-[52px] font-extrabold tracking-tight"
+          style={{ color: "var(--slide-ink)" }}
+        >
+          {data.headline}
+        </h1>
+      </LayoutSlot>
 
-      <div className="mt-12 flex flex-1 flex-col justify-center gap-5">
+      <LayoutSlot id="steps" layout={getSlot(layout, "steps")} className="mt-12 flex flex-1 flex-col justify-center gap-5">
         {data.steps.map((step, index) => {
           const tone = tones[index % tones.length];
           const darkText = tone === "var(--slide-surface)";
@@ -45,14 +50,14 @@ export function RibbonStepsSlide({ tokens, data }: Props) {
               <NumberBadge n={index + 1} size={72} tone="surface" />
               <div className="min-w-0 flex-1">
                 <p
-                  className="truncate font-[family-name:var(--slide-font-display)] text-[32px] font-extrabold uppercase tracking-wide"
+                  className="slot-text truncate font-[family-name:var(--slide-font-display)] text-[32px] font-extrabold uppercase tracking-wide"
                   style={{ color: darkText ? "var(--slide-ink)" : "var(--slide-bg)" }}
                 >
                   {step.title}
                 </p>
                 {step.detail ? (
                   <p
-                    className="mt-0.5 font-[family-name:var(--slide-font-body)] text-[22px]"
+                    className="slot-text mt-0.5 font-[family-name:var(--slide-font-body)] text-[22px]"
                     style={{
                       color: darkText
                         ? "var(--slide-ink-muted)"
@@ -71,7 +76,7 @@ export function RibbonStepsSlide({ tokens, data }: Props) {
             </div>
           );
         })}
-      </div>
+      </LayoutSlot>
     </SlideFrame>
   );
 }

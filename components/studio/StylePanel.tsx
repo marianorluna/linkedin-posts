@@ -28,7 +28,6 @@ type Props = {
   onTokensChange: (tokens: BrandTokens) => void;
   onSelectKit: (kitId: string) => void;
   onApplyPreset: (presetKey: string) => void;
-  persistHint?: string;
 };
 
 function ColorField({
@@ -77,7 +76,6 @@ export function StylePanel({
   onTokensChange,
   onSelectKit,
   onApplyPreset,
-  persistHint,
 }: Props) {
   function patchColors(partial: Partial<BrandTokens["colors"]>) {
     onTokensChange(
@@ -89,10 +87,7 @@ export function StylePanel({
   }
 
   return (
-    <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-      <p className="text-sm font-medium">Estilo / BrandKit</p>
-      {persistHint ? <p className="text-[11px] text-[var(--muted)]">{persistHint}</p> : null}
-
+    <div className="space-y-3">
       <div>
         <label className="text-xs text-[var(--muted)]">BrandKit</label>
         <select

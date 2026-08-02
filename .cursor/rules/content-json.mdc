@@ -9,6 +9,7 @@ alwaysApply: false
 - Fuente de verdad: `carouselSchema` en `lib/schemas/carousel.ts`.
 - No añadas templates nuevos sin seguir `.cursor/skills/nueva-plantilla/SKILL.md` (componente + schema + studio + LLM + seed).
 - Iconos: solo IDs de `lib/icons/registry.ts` (`ICON_IDS`).
+- `layout` opcional por slide (`lib/schemas/layout.ts`); slots tipados por plantilla. No inventar ids de slot.
 - Respeta límites de caracteres; son intencionales para slides aireadas.
 - Carrusel típico: 4–7 slides, empieza en `hook`, termina en `cta`.
 - Tags cortos, sin hashtags dentro del string (el UI puede añadir `#`).

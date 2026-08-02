@@ -19,25 +19,25 @@ type Props = {
 export function SlideRenderer({ slide, tokens }: Props) {
   switch (slide.template) {
     case "hook":
-      return <HookSlide tokens={tokens} data={slide.data} />;
+      return <HookSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "ab-compare":
-      return <AbCompareSlide tokens={tokens} data={slide.data} />;
+      return <AbCompareSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "stat-hero":
-      return <StatHeroSlide tokens={tokens} data={slide.data} />;
+      return <StatHeroSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "steps":
-      return <StepsSlide tokens={tokens} data={slide.data} />;
+      return <StepsSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "phone-mock":
-      return <PhoneMockSlide tokens={tokens} data={slide.data} />;
+      return <PhoneMockSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "cta":
-      return <CtaSlide tokens={tokens} data={slide.data} />;
+      return <CtaSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "vs-split":
-      return <VsSplitSlide tokens={tokens} data={slide.data} />;
+      return <VsSplitSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "ribbon-steps":
-      return <RibbonStepsSlide tokens={tokens} data={slide.data} />;
+      return <RibbonStepsSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "icon-rows":
-      return <IconRowsSlide tokens={tokens} data={slide.data} />;
+      return <IconRowsSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     case "icon-bento":
-      return <IconBentoSlide tokens={tokens} data={slide.data} />;
+      return <IconBentoSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
     default: {
       const _exhaustive: never = slide;
       return _exhaustive;

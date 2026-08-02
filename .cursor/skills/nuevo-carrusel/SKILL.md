@@ -13,6 +13,7 @@ description: Crear o iterar un carrusel LinkedIn (brief → JSON → plantillas 
 4. Proponer `CarouselContent` válido (Zod): `hook` → slides de valor → `cta`.
    - Preferir plantillas modernas: `vs-split`, `ribbon-steps`, `icon-rows`, `icon-bento`.
    - Incluir `icon` del catálogo SVG cuando el schema lo permita.
+   - Campo `layout` (x/y/w/h, fontSize, bold, italic por slot): **omitir por defecto**. Solo añadirlo si el usuario pide composición/posición custom.
 5. Crear/actualizar post vía studio o API (`POST /api/posts` o `PATCH /api/posts/:id`).
 6. Si el usuario pide PDF: guardar versión, asegurar `pnpm dev`, llamar `POST /api/export` con `versionId`.
 7. Entregar: título, nº de slides, path/descarga del PDF.

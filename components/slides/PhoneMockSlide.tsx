@@ -1,22 +1,31 @@
 import type { BrandTokens } from "@/lib/design-tokens";
 import type { SlideContent } from "@/lib/schemas/carousel";
+import { getSlot } from "@/lib/domain/layout";
+import { LayoutSlot } from "./layout/LayoutSlot";
 import { SlideBody, SlideEyebrow, SlideFrame, SlideHeadline } from "./SlideFrame";
 
 type Props = {
   tokens: BrandTokens;
   data: Extract<SlideContent, { template: "phone-mock" }>["data"];
+  layout?: Extract<SlideContent, { template: "phone-mock" }>["layout"];
 };
 
-export function PhoneMockSlide({ tokens, data }: Props) {
+export function PhoneMockSlide({ tokens, data, layout }: Props) {
   return (
     <SlideFrame tokens={tokens}>
       <div className="grid h-full grid-cols-[1.05fr_0.95fr] items-center gap-10">
         <div>
           <SlideEyebrow>Vista móvil</SlideEyebrow>
-          <SlideHeadline>{data.headline}</SlideHeadline>
-          {data.caption ? <SlideBody>{data.caption}</SlideBody> : null}
+          <LayoutSlot id="headline" layout={getSlot(layout, "headline")}>
+            <SlideHeadline>{data.headline}</SlideHeadline>
+          </LayoutSlot>
+          {data.caption ? (
+            <LayoutSlot id="caption" layout={getSlot(layout, "caption")}>
+              <SlideBody>{data.caption}</SlideBody>
+            </LayoutSlot>
+          ) : null}
         </div>
-        <div className="flex justify-end">
+        <LayoutSlot id="phone" layout={getSlot(layout, "phone")} className="flex justify-end">
           <div
             className="relative h-[760px] w-[380px] p-[18px]"
             style={{
@@ -35,7 +44,7 @@ export function PhoneMockSlide({ tokens, data }: Props) {
               style={{ background: "var(--slide-bg-elevated)" }}
             >
               <p
-                className="font-[family-name:var(--slide-font-mono)] text-[18px] tracking-[0.14em] uppercase"
+                className="slot-text font-[family-name:var(--slide-font-mono)] text-[18px] tracking-[0.14em] uppercase"
                 style={{ color: "var(--slide-accent)" }}
               >
                 {data.screenTitle}
@@ -44,7 +53,7 @@ export function PhoneMockSlide({ tokens, data }: Props) {
                 {data.screenLines.map((line) => (
                   <li
                     key={line}
-                    className="rounded-[14px] px-5 py-4 font-[family-name:var(--slide-font-body)] text-[22px]"
+                    className="slot-text rounded-[14px] px-5 py-4 font-[family-name:var(--slide-font-body)] text-[22px]"
                     style={{
                       background: "var(--slide-accent-soft)",
                       border: "1px solid var(--slide-stroke)",
@@ -61,7 +70,7 @@ export function PhoneMockSlide({ tokens, data }: Props) {
               />
             </div>
           </div>
-        </div>
+        </LayoutSlot>
       </div>
     </SlideFrame>
   );

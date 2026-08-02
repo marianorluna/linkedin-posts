@@ -81,7 +81,7 @@ export function SlideFrame({ tokens, children, className = "", padless = false }
     >
       <MoodBackground mood={tokens.mood} />
       <div
-        className={`relative z-10 flex h-full w-full flex-col ${padless ? "" : "p-[var(--slide-pad)]"}`}
+        className={`relative z-10 flex h-full w-full flex-col overflow-hidden ${padless ? "" : "p-[var(--slide-pad)]"}`}
       >
         {children}
       </div>
@@ -92,7 +92,7 @@ export function SlideFrame({ tokens, children, className = "", padless = false }
 export function SlideEyebrow({ children }: { children: ReactNode }) {
   return (
     <p
-      className="mb-5 font-[family-name:var(--slide-font-mono)] text-[22px] tracking-[0.18em] uppercase"
+      className="slot-text mb-5 font-[family-name:var(--slide-font-mono)] text-[22px] tracking-[0.18em] uppercase"
       style={{ color: "var(--slide-accent)" }}
     >
       {children}
@@ -103,7 +103,7 @@ export function SlideEyebrow({ children }: { children: ReactNode }) {
 export function SlideHeadline({ children }: { children: ReactNode }) {
   return (
     <h1
-      className="font-[family-name:var(--slide-font-display)] text-[64px] leading-[1.05] tracking-[-0.03em]"
+      className="slot-text font-[family-name:var(--slide-font-display)] text-[64px] leading-[1.05] tracking-[-0.03em]"
       style={{ color: "var(--slide-ink)" }}
     >
       {children}
@@ -114,7 +114,7 @@ export function SlideHeadline({ children }: { children: ReactNode }) {
 export function SlideBody({ children }: { children: ReactNode }) {
   return (
     <p
-      className="mt-6 max-w-[820px] font-[family-name:var(--slide-font-body)] text-[28px] leading-[1.35]"
+      className="slot-text mt-6 max-w-[820px] font-[family-name:var(--slide-font-body)] text-[28px] leading-[1.35]"
       style={{ color: "var(--slide-ink-muted)" }}
     >
       {children}

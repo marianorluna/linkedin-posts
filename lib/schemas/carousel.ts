@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ICON_IDS } from "@/lib/icons/registry";
+import { layoutSchemaForSlots, TEMPLATE_SLOTS } from "@/lib/schemas/layout";
 
 const short = (max: number) => z.string().trim().min(1).max(max);
 const optionalShort = (max: number) => z.string().trim().max(max).optional().default("");
@@ -14,6 +15,7 @@ export const hookSlideSchema = z.object({
     subline: optionalShort(80),
     icon: optionalIcon,
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS.hook),
 });
 
 export const abCompareSlideSchema = z.object({
@@ -33,6 +35,7 @@ export const abCompareSlideSchema = z.object({
     footer: optionalShort(60),
     icon: optionalIcon,
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS["ab-compare"]),
 });
 
 export const statHeroSlideSchema = z.object({
@@ -44,6 +47,7 @@ export const statHeroSlideSchema = z.object({
     detail: optionalShort(80),
     icon: optionalIcon,
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS["stat-hero"]),
 });
 
 export const stepsSlideSchema = z.object({
@@ -61,6 +65,7 @@ export const stepsSlideSchema = z.object({
       .min(2)
       .max(3),
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS.steps),
 });
 
 export const phoneMockSlideSchema = z.object({
@@ -71,6 +76,7 @@ export const phoneMockSlideSchema = z.object({
     screenTitle: short(28),
     screenLines: z.array(short(40)).min(1).max(4),
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS["phone-mock"]),
 });
 
 export const ctaSlideSchema = z.object({
@@ -81,6 +87,7 @@ export const ctaSlideSchema = z.object({
     cta: short(40),
     icon: optionalIcon,
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS.cta),
 });
 
 export const vsSplitSlideSchema = z.object({
@@ -101,6 +108,7 @@ export const vsSplitSlideSchema = z.object({
       .min(2)
       .max(4),
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS["vs-split"]),
 });
 
 export const ribbonStepsSlideSchema = z.object({
@@ -118,6 +126,7 @@ export const ribbonStepsSlideSchema = z.object({
       .min(3)
       .max(4),
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS["ribbon-steps"]),
 });
 
 export const iconRowsSlideSchema = z.object({
@@ -135,6 +144,7 @@ export const iconRowsSlideSchema = z.object({
       .min(2)
       .max(4),
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS["icon-rows"]),
 });
 
 export const iconBentoSlideSchema = z.object({
@@ -153,6 +163,7 @@ export const iconBentoSlideSchema = z.object({
       .min(3)
       .max(6),
   }),
+  layout: layoutSchemaForSlots(TEMPLATE_SLOTS["icon-bento"]),
 });
 
 export const slideSchema = z.discriminatedUnion("template", [

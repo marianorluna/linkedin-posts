@@ -24,7 +24,8 @@ Usa este skill cuando el usuario pida una plantilla nueva, un layout inspirado e
    - Añadir a `slideSchema`, `TEMPLATE_SLUGS`, y opcionalmente `sampleCarousel`.
 3. **Componente** `components/slides/XxxSlide.tsx`:
    - Usar `SlideFrame` + primitives (`PillLabel`, `NumberBadge`, `VsDivider`, `RibbonBar`, `IconWell`).
-   - Usar `SlideIcon` y CSS vars del BrandKit.
+   - Envolver bloques editables con `LayoutSlot` y registrar slots en `TEMPLATE_SLOTS` (`lib/schemas/layout.ts`).
+   - Usar `SlideIcon` y CSS vars del BrandKit. Clase `slot-text` en tipografías overrideables.
 4. **Registro** en `components/slides/SlideRenderer.tsx` (case exhaustivo).
 5. **Studio** en `components/studio/StudioEditor.tsx`:
    - `emptySlide` + `SlideFields` (+ `IconPicker` si hay iconos).

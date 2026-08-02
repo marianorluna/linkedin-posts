@@ -1,40 +1,64 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type RefObject } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { LayoutEditProvider } from "@/components/slides/layout/LayoutEditContext";
 import { SlideRenderer } from "@/components/slides/SlideRenderer";
+import { CollapsibleSection } from "@/components/studio/CollapsibleSection";
 import { IconPicker } from "@/components/studio/IconPicker";
+import { LayoutOverlay } from "@/components/studio/LayoutOverlay";
+import { LayoutPanel } from "@/components/studio/LayoutPanel";
 import { StylePanel, type BrandKitOption } from "@/components/studio/StylePanel";
+import { setSlot, slotsForTemplate } from "@/lib/domain/layout";
 import type { BrandTokens } from "@/lib/design-tokens";
 import { BRAND_PRESETS, SLIDE_SIZE, deepMergeBrandTokens } from "@/lib/design-tokens";
 import type { IconId } from "@/lib/icons/registry";
+import type { SlotLayout } from "@/lib/schemas/layout";
 import type { CarouselContent, SlideContent, TemplateSlug } from "@/lib/schemas/carousel";
 import { TEMPLATE_SLUGS } from "@/lib/schemas/carousel";
 
-function usePreviewScale() {
-  const [scale, setScale] = useState(0.42);
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.5;
+const ZOOM_STEP = 0.25;
+
+function clampZoom(value: number) {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value / ZOOM_STEP) * ZOOM_STEP));
+}
+
+/** Fit-to-container scale × user zoom factor (Strategy for preview sizing). */
+function usePreviewScale(containerRef: RefObject<HTMLElement | null>) {
+  const [fitScale, setFitScale] = useState(0.42);
+  const [zoomFactor, setZoomFactor] = useState(1);
 
   useEffect(() => {
-    const mqMobile = window.matchMedia("(max-width: 767px)");
-    const mqTablet = window.matchMedia("(min-width: 768px) and (max-width: 1023px)");
+    const el = containerRef.current;
+    if (!el) return;
 
-    function update() {
-      if (mqMobile.matches) setScale(0.28);
-      else if (mqTablet.matches) setScale(0.34);
-      else setScale(0.42);
-    }
+    const update = () => {
+      const styles = getComputedStyle(el);
+      const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+      const padY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+      const available = Math.min(el.clientWidth - padX, el.clientHeight - padY);
+      if (available <= 0) return;
+      setFitScale(Math.max(0.15, Math.min(1, available / SLIDE_SIZE)));
+    };
 
     update();
-    mqMobile.addEventListener("change", update);
-    mqTablet.addEventListener("change", update);
-    return () => {
-      mqMobile.removeEventListener("change", update);
-      mqTablet.removeEventListener("change", update);
-    };
-  }, []);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [containerRef]);
 
-  return scale;
+  return {
+    scale: fitScale * zoomFactor,
+    zoomFactor,
+    zoomIn: () => setZoomFactor((z) => clampZoom(z + ZOOM_STEP)),
+    zoomOut: () => setZoomFactor((z) => clampZoom(z - ZOOM_STEP)),
+    resetZoom: () => setZoomFactor(1),
+    canZoomIn: zoomFactor < ZOOM_MAX - 1e-6,
+    canZoomOut: zoomFactor > ZOOM_MIN + 1e-6,
+  };
 }
 
 type Asset = {
@@ -188,9 +212,33 @@ export function StudioEditor({
   const [kits, setKits] = useState<BrandKitOption[]>([]);
   const [presets, setPresets] = useState<Array<{ key: string; name: string }>>([]);
   const [selectedKitId, setSelectedKitId] = useState<string | null>(initialBrandKitId);
+  const [layoutEditMode, setLayoutEditMode] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const activeSlide = content.slides[activeIndex];
-  const scale = usePreviewScale();
+  const previewRef = useRef<HTMLDivElement>(null);
+  const slideFrameRef = useRef<HTMLDivElement>(null);
+  const { scale, zoomFactor, zoomIn, zoomOut, resetZoom, canZoomIn, canZoomOut } =
+    usePreviewScale(previewRef);
+
+  useEffect(() => {
+    setSelectedSlot(null);
+  }, [activeIndex]);
+
+  function updateActiveLayoutSlot(id: string, patch: SlotLayout) {
+    setContent((prev) => {
+      const slide = prev.slides[activeIndex];
+      if (!slide) return prev;
+      const nextSlide = {
+        ...slide,
+        layout: setSlot(slide.layout, id, patch),
+      } as SlideContent;
+      return {
+        ...prev,
+        slides: prev.slides.map((s, i) => (i === activeIndex ? nextSlide : s)),
+      };
+    });
+  }
 
   useEffect(() => {
     void (async () => {
@@ -471,16 +519,59 @@ export function StudioEditor({
           </div>
         </aside>
 
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-black/40">
-          <div className="studio-scroll flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-4">
+        <section className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-black/40">
+          <div
+            className="pointer-events-none absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full border border-[var(--panel-border)] bg-[var(--panel)]/95 p-1 shadow-lg backdrop-blur-sm"
+            role="group"
+            aria-label="Zoom del preview"
+          >
+            <button
+              type="button"
+              disabled={!canZoomOut}
+              onClick={zoomOut}
+              className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-sm text-[var(--muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Alejar"
+              title="Alejar"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={resetZoom}
+              className="pointer-events-auto min-w-[3.25rem] rounded-full px-2 py-1 font-[family-name:var(--font-mono)] text-xs tabular-nums text-[var(--accent)] transition hover:bg-white/10"
+              aria-label="Restablecer zoom al ajuste"
+              title="Ajustar al panel"
+            >
+              {Math.round(zoomFactor * 100)}%
+            </button>
+            <button
+              type="button"
+              disabled={!canZoomIn}
+              onClick={zoomIn}
+              className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-sm text-[var(--muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Acercar"
+              title="Acercar"
+            >
+              +
+            </button>
+          </div>
+          <div
+            ref={previewRef}
+            className="studio-scroll flex min-h-0 flex-1 flex-col items-center overflow-auto p-4"
+          >
             <div
-              className="mx-auto shrink-0 overflow-hidden rounded-xl"
+              className="relative mx-auto shrink-0 overflow-hidden rounded-xl"
               style={{
                 width: SLIDE_SIZE * scale,
                 height: SLIDE_SIZE * scale,
               }}
             >
+              <LayoutOverlay
+                enabled={layoutEditMode}
+                onBackgroundClick={() => setSelectedSlot(null)}
+              />
               <div
+                ref={slideFrameRef}
                 style={{
                   width: SLIDE_SIZE,
                   height: SLIDE_SIZE,
@@ -488,13 +579,51 @@ export function StudioEditor({
                   transformOrigin: "top left",
                 }}
               >
-                {activeSlide ? <SlideRenderer slide={activeSlide} tokens={tokens} /> : null}
+                {activeSlide ? (
+                  <LayoutEditProvider
+                    value={{
+                      editMode: layoutEditMode,
+                      selectedSlot,
+                      selectSlot: setSelectedSlot,
+                      updateSlot: updateActiveLayoutSlot,
+                      measureFrame: () => {
+                        const frame = slideFrameRef.current?.querySelector(
+                          "[data-slide-frame]",
+                        ) as HTMLElement | null;
+                        return frame?.getBoundingClientRect() ?? null;
+                      },
+                    }}
+                  >
+                    <SlideRenderer slide={activeSlide} tokens={tokens} />
+                  </LayoutEditProvider>
+                ) : null}
               </div>
             </div>
           </div>
           <div className="shrink-0 space-y-3 border-t border-[var(--panel-border)] p-4">
             {message ? <p className="text-center text-sm text-[var(--accent)]">{message}</p> : null}
             <div className="flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setLayoutEditMode((v) => {
+                    const next = !v;
+                    if (next && activeSlide) {
+                      setSelectedSlot(slotsForTemplate(activeSlide.template)[0] ?? null);
+                    } else {
+                      setSelectedSlot(null);
+                    }
+                    return next;
+                  });
+                }}
+                className={`rounded-full px-5 py-2.5 text-sm ${
+                  layoutEditMode
+                    ? "bg-[var(--accent)] font-medium text-[#0b1015]"
+                    : "border border-[var(--panel-border)]"
+                }`}
+              >
+                {layoutEditMode ? "Layout ON" : "Editar layout"}
+              </button>
               <button
                 type="button"
                 disabled={pending}
@@ -524,73 +653,92 @@ export function StudioEditor({
         </section>
 
         <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] md:col-start-2 md:row-start-2 lg:col-start-auto lg:row-start-auto">
-          <div className="studio-scroll min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-            <div>
-              <label className="text-xs text-[var(--muted)]">Brief / tema</label>
-              <textarea
-                value={brief}
-                onChange={(e) => setBrief(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => startTransition(() => void generate())}
-                className="mt-2 w-full rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
-              >
-                Generar con IA
-              </button>
-            </div>
+          <div className="studio-scroll min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
+            <CollapsibleSection title="Contenido" defaultOpen>
+              <div>
+                <label className="text-xs text-[var(--muted)]">Brief / tema</label>
+                <textarea
+                  value={brief}
+                  onChange={(e) => setBrief(e.target.value)}
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => startTransition(() => void generate())}
+                  className="mt-2 w-full rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
+                >
+                  Generar con IA
+                </button>
+              </div>
 
-            <div>
-              <label className="text-xs text-[var(--muted)]">Título del post</label>
-              <input
-                value={content.title}
-                onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[var(--muted)]">Topic</label>
-              <input
-                value={content.topic}
-                onChange={(e) => setContent((c) => ({ ...c, topic: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[var(--muted)]">Tags (coma)</label>
-              <input
-                value={content.tags.join(", ")}
-                onChange={(e) =>
-                  setContent((c) => ({
-                    ...c,
-                    tags: e.target.value
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean),
-                  }))
-                }
-                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-              />
-            </div>
+              <div>
+                <label className="text-xs text-[var(--muted)]">Título del post</label>
+                <input
+                  value={content.title}
+                  onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--muted)]">Topic</label>
+                <input
+                  value={content.topic}
+                  onChange={(e) => setContent((c) => ({ ...c, topic: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[var(--muted)]">Tags (coma)</label>
+                <input
+                  value={content.tags.join(", ")}
+                  onChange={(e) =>
+                    setContent((c) => ({
+                      ...c,
+                      tags: e.target.value
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean),
+                    }))
+                  }
+                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+                />
+              </div>
+            </CollapsibleSection>
 
-            <StylePanel
-              tokens={tokens}
-              kits={kits}
-              presets={presets}
-              selectedKitId={selectedKitId}
-              onTokensChange={(next) => void persistTokens(next)}
-              onSelectKit={(id) => void selectKit(id)}
-              onApplyPreset={(key) => void applyPreset(key)}
-              persistHint="Los cambios de estilo se guardan en el BrandKit al editar colores o al Guardar."
-            />
+            <CollapsibleSection
+              title="Estilo / BrandKit"
+              hint="Los cambios de estilo se guardan en el BrandKit al editar colores o al Guardar."
+            >
+              <StylePanel
+                tokens={tokens}
+                kits={kits}
+                presets={presets}
+                selectedKitId={selectedKitId}
+                onTokensChange={(next) => void persistTokens(next)}
+                onSelectKit={(id) => void selectKit(id)}
+                onApplyPreset={(key) => void applyPreset(key)}
+              />
+            </CollapsibleSection>
+
+            {activeSlide && layoutEditMode ? (
+              <CollapsibleSection title="Layout del slot">
+                <LayoutPanel
+                  slide={activeSlide}
+                  selectedSlot={selectedSlot}
+                  onSelectSlot={setSelectedSlot}
+                  onChange={(slide) => updateSlide(activeIndex, slide)}
+                />
+              </CollapsibleSection>
+            ) : null}
 
             {activeSlide ? (
-              <SlideFields
-                slide={activeSlide}
-                onChange={(slide) => updateSlide(activeIndex, slide)}
-              />
+              <CollapsibleSection title={`Slide: ${activeSlide.template}`}>
+                <SlideFields
+                  slide={activeSlide}
+                  onChange={(slide) => updateSlide(activeIndex, slide)}
+                />
+              </CollapsibleSection>
             ) : null}
           </div>
         </aside>
@@ -633,8 +781,7 @@ function SlideFields({
   switch (slide.template) {
     case "hook":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide hook</p>
+        <div className="space-y-3">
           <Field
             label="Eyebrow"
             value={slide.data.eyebrow ?? ""}
@@ -658,8 +805,7 @@ function SlideFields({
       );
     case "ab-compare":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide A/B</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -717,8 +863,7 @@ function SlideFields({
       );
     case "stat-hero":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide stat</p>
+        <div className="space-y-3">
           <Field
             label="Valor"
             value={slide.data.value}
@@ -742,8 +887,7 @@ function SlideFields({
       );
     case "steps":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide steps</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -787,8 +931,7 @@ function SlideFields({
       );
     case "phone-mock":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide phone</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -824,8 +967,7 @@ function SlideFields({
       );
     case "cta":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide CTA</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -849,8 +991,7 @@ function SlideFields({
       );
     case "vs-split":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide VS</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -915,8 +1056,7 @@ function SlideFields({
       );
     case "ribbon-steps":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide ribbon</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -959,8 +1099,7 @@ function SlideFields({
       );
     case "icon-rows":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide icon-rows</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -1005,8 +1144,7 @@ function SlideFields({
       );
     case "icon-bento":
       return (
-        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
-          <p className="text-sm font-medium">Slide bento</p>
+        <div className="space-y-3">
           <Field
             label="Headline"
             value={slide.data.headline}
