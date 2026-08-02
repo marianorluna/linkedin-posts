@@ -9,7 +9,9 @@ import { CollapsibleSection } from "@/components/studio/CollapsibleSection";
 import { IconPicker } from "@/components/studio/IconPicker";
 import { LayoutOverlay } from "@/components/studio/LayoutOverlay";
 import { LayoutPanel } from "@/components/studio/LayoutPanel";
+import { EpisodePanel } from "@/components/studio/EpisodePanel";
 import { StylePanel, type BrandKitOption } from "@/components/studio/StylePanel";
+import { resolveEpisodeTokens } from "@/lib/domain/episode-visual";
 import { setSlot, slotsForTemplate } from "@/lib/domain/layout";
 import type { BrandTokens } from "@/lib/design-tokens";
 import { BRAND_PRESETS, SLIDE_SIZE, deepMergeBrandTokens } from "@/lib/design-tokens";
@@ -17,6 +19,7 @@ import type { IconId } from "@/lib/icons/registry";
 import type { SlotLayout } from "@/lib/schemas/layout";
 import type { CarouselContent, SlideContent, TemplateSlug } from "@/lib/schemas/carousel";
 import { TEMPLATE_SLUGS } from "@/lib/schemas/carousel";
+import { defaultVariant, variantsFor } from "@/lib/schemas/variants";
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.5;
@@ -216,6 +219,7 @@ export function StudioEditor({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const activeSlide = content.slides[activeIndex];
+  const episode = resolveEpisodeTokens(tokens, content.visual);
   const previewRef = useRef<HTMLDivElement>(null);
   const slideFrameRef = useRef<HTMLDivElement>(null);
   const { scale, zoomFactor, zoomIn, zoomOut, resetZoom, canZoomIn, canZoomOut } =
@@ -594,7 +598,13 @@ export function StudioEditor({
                       },
                     }}
                   >
-                    <SlideRenderer slide={activeSlide} tokens={tokens} />
+                    <SlideRenderer
+                      slide={activeSlide}
+                      tokens={episode.tokens}
+                      motif={episode.motif}
+                      contrast={episode.contrast}
+                      legacyMoodDecor={episode.legacyMoodDecor}
+                    />
                   </LayoutEditProvider>
                 ) : null}
               </div>
@@ -721,6 +731,16 @@ export function StudioEditor({
               />
             </CollapsibleSection>
 
+            <CollapsibleSection
+              title="Episodio"
+              hint="Motivo y acento de este carrusel; no altera el BrandKit guardado."
+            >
+              <EpisodePanel
+                visual={content.visual}
+                onChange={(visual) => setContent((c) => ({ ...c, visual }))}
+              />
+            </CollapsibleSection>
+
             {activeSlide && layoutEditMode ? (
               <CollapsibleSection title="Layout del slot">
                 <LayoutPanel
@@ -771,6 +791,36 @@ function Field({
   );
 }
 
+function VariantField({
+  slide,
+  onChange,
+}: {
+  slide: SlideContent;
+  onChange: (slide: SlideContent) => void;
+}) {
+  const options = variantsFor(slide.template);
+  if (options.length <= 1) return null;
+  const value = slide.variant ?? defaultVariant(slide.template);
+  return (
+    <div>
+      <label className="text-xs text-[var(--muted)]">Variante</label>
+      <select
+        className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-2 py-2 text-sm"
+        value={value}
+        onChange={(e) =>
+          onChange({ ...slide, variant: e.target.value } as SlideContent)
+        }
+      >
+        {options.map((v) => (
+          <option key={v} value={v}>
+            {v}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function SlideFields({
   slide,
   onChange,
@@ -778,10 +828,13 @@ function SlideFields({
   slide: SlideContent;
   onChange: (slide: SlideContent) => void;
 }) {
+  const variantControl = <VariantField slide={slide} onChange={onChange} />;
+
   switch (slide.template) {
     case "hook":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Eyebrow"
             value={slide.data.eyebrow ?? ""}
@@ -806,6 +859,7 @@ function SlideFields({
     case "ab-compare":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -864,6 +918,7 @@ function SlideFields({
     case "stat-hero":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Valor"
             value={slide.data.value}
@@ -888,6 +943,7 @@ function SlideFields({
     case "steps":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -932,6 +988,7 @@ function SlideFields({
     case "phone-mock":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -968,6 +1025,7 @@ function SlideFields({
     case "cta":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -992,6 +1050,7 @@ function SlideFields({
     case "vs-split":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -1057,6 +1116,7 @@ function SlideFields({
     case "ribbon-steps":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -1100,6 +1160,7 @@ function SlideFields({
     case "icon-rows":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}
@@ -1145,6 +1206,7 @@ function SlideFields({
     case "icon-bento":
       return (
         <div className="space-y-3">
+          {variantControl}
           <Field
             label="Headline"
             value={slide.data.headline}

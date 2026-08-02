@@ -1,5 +1,5 @@
 ---
-description: Estilo visual de diapositivas 1080x1080 (BrandKit + moods)
+description: Estilo visual de diapositivas 1080x1080 (BrandKit + moods + episodio)
 globs: components/slides/**
 alwaysApply: false
 ---
@@ -9,9 +9,12 @@ alwaysApply: false
 - Tamaño fijo 1080×1080 vía `SlideFrame`. No cambies el tamaño ad hoc.
 - Usa CSS variables del BrandKit (`--slide-*`), no colores hardcodeados sueltos.
 - Tipografías vía tokens: `--slide-font-display`, `--slide-font-body`, `--slide-font-mono` (pares: syne-instrument, space-grotesk, dm-sans).
-- Moods permitidos: `dark-wire`, `light-flat`, `bold-blocks`. Respeta el mood del BrandKit.
+- Moods permitidos: `dark-wire`, `light-flat`, `bold-blocks`. BrandKit = base; `carousel.visual.mood` puede overridear en render.
+- EpisodeVisual: motifs (`orbs|orbs-tl|orbs-center|arcs|blocks|dots|grid|ribbons|bars|diagonal|none`) vía `MotifLayer`; sin `visual` = decoración legacy del mood. `none` = plano. No dibujar círculos decorativos hardcodeados en plantillas (van en MotifLayer).
+- `accentShift` / `contrast` vía `resolveEpisodeTokens`.
+- Variantes de composición: switch por `variant` en el componente; no duplicar plantillas por silueta.
 - Formas reutilizables: `components/slides/primitives/*` + `SlideIcon` (SVG del catálogo).
 - Look limpio tipo infografía: stroke fino o bloques de color, aire, poco texto.
 - Evita: purple gradients genéricos, Inter/Roboto/Arial, overflow de copy, badges flotantes sueltos, emojis Unicode.
 - Phone mock: usa el patrón existente en `PhoneMockSlide`.
-- Una composición clara; no satures con demasiados elementos decorativos.
+- Una composición clara; no satures con demasiados elementos decorativos. Variedad entre posts vía arco + visual + variant; coherencia dentro del mismo carrusel.

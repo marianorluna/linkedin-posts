@@ -1,4 +1,17 @@
 import { carouselSchema, type CarouselContent } from "@/lib/schemas/carousel";
+import { listNarrativeArcs } from "@/lib/domain/narrative-arcs";
+import { TEMPLATE_VARIANTS } from "@/lib/schemas/variants";
+
+const ARCS_DOC = listNarrativeArcs()
+  .map(
+    (a) =>
+      `- ${a.id}: ${a.useWhen}. Secuencia: ${a.sequence.join(" → ")}. visual tipico: ${JSON.stringify(a.visual)}. variants: ${JSON.stringify(a.variants)}`,
+  )
+  .join("\n");
+
+const VARIANTS_DOC = Object.entries(TEMPLATE_VARIANTS)
+  .map(([slug, variants]) => `- ${slug}: ${variants.join(" | ")}`)
+  .join("\n");
 
 const SYSTEM_PROMPT = `Eres un editor de carruseles LinkedIn (documento PDF, slides 1080x1080).
 Devuelves SOLO JSON válido que cumpla este contrato:
@@ -6,8 +19,15 @@ Devuelves SOLO JSON válido que cumpla este contrato:
   "title": string,
   "topic": string,
   "tags": string[],
+  "visual": {
+    "mood"?: "dark-wire"|"light-flat"|"bold-blocks",
+    "density"?: "air"|"compact",
+    "motif"?: "orbs"|"orbs-tl"|"orbs-center"|"arcs"|"blocks"|"dots"|"grid"|"ribbons"|"bars"|"diagonal"|"none",
+    "accentShift"?: "brand"|"alt"|"highlight",
+    "contrast"?: "soft"|"hard"
+  },
   "slides": [
-    { "template": "hook"|"ab-compare"|"stat-hero"|"steps"|"phone-mock"|"cta"|"vs-split"|"ribbon-steps"|"icon-rows"|"icon-bento", "data": {...} }
+    { "template": "...", "variant"?: string, "data": {...} }
   ]
 }
 
@@ -23,15 +43,24 @@ Plantillas y cuándo usarlas:
 - icon-rows: 2–4 filas con icono obligatorio.
 - icon-bento: 3–6 celdas (label, detail, icon).
 
+Variantes permitidas por plantilla (elige una; si omites, se usa la primera):
+${VARIANTS_DOC}
+
+Arcos narrativos (elige UNO según el brief; no uses siempre el mismo):
+${ARCS_DOC}
+
 Iconos permitidos (SVG): lightbulb, gears, chart-up, brain, target, flag, users, process, globe, cloud, chip, robot, network, document, check, growth, coin, search.
 
 Reglas de contenido:
 - Español.
 - Poco texto: 1 idea por slide. Headlines cortos.
-- Estructura típica: hook → 2–4 slides de valor (prioriza vs-split / ribbon-steps / icon-bento / icon-rows) → cta.
-- Usa solo plantillas del catálogo; no inventes templates ni icon ids.
+- Empieza en hook y termina en cta. Secuencia según el arco elegido (puedes insertar 1 slide extra de valor si aporta).
+- Incluye "visual" coherente con el arco (motif + accentShift + contrast). Usa motif "none" si quieres fondo plano sin figuras; no repitas siempre "orbs".
+- Incluye "variant" en hook/cta y en slides con variantes tipicas del arco.
+- Usa solo plantillas del catálogo; no inventes templates, variants ni icon ids.
 - Nada de relleno corporativo ni párrafos largos.
-- Visual-first: el copy debe dejar aire en el layout.`;
+- Visual-first: el copy debe dejar aire en el layout.
+- Evita repetir siempre vs-split + ribbon-steps; diversifica según el argumento del brief.`;
 
 export type GenerateResult = {
   content: CarouselContent;
@@ -45,43 +74,45 @@ function demoCarousel(brief: string): CarouselContent {
     title: topic.slice(0, 60),
     topic,
     tags: ["linkedin", "carrusel"],
+    visual: { motif: "orbs", accentShift: "highlight", contrast: "soft" },
     slides: [
       {
         template: "hook",
+        variant: "type-dominant",
         data: {
-          eyebrow: "Idea rápida",
+          eyebrow: "Dato clave",
           headline: topic.length > 40 ? `${topic.slice(0, 40)}…` : topic,
-          subline: "Desliza: una idea clara por diapositiva.",
+          subline: "Un número. Una idea. Desliza.",
+          icon: "chart-up",
         },
       },
       {
-        template: "vs-split",
+        template: "stat-hero",
+        variant: "watermark",
         data: {
-          headline: "Antes vs sistema",
-          leftLabel: "Antes",
-          rightLabel: "Ahora",
+          value: "3×",
+          unit: "",
+          headline: "Más claro que un post de texto",
+          detail: "Carrusel visual, una idea por slide.",
+          icon: "growth",
+        },
+      },
+      {
+        template: "icon-rows",
+        data: {
+          headline: "Por qué funciona",
           rows: [
-            { topic: "Idea", left: "Se pierde", right: "Brief claro", icon: "lightbulb" },
-            { topic: "Proceso", left: "Improvisado", right: "Plantilla", icon: "process" },
-            { topic: "Ritmo", left: "Lento", right: "Iterativo", icon: "growth" },
-          ],
-        },
-      },
-      {
-        template: "ribbon-steps",
-        data: {
-          headline: "Cómo lo armamos",
-          steps: [
-            { title: "Brief", detail: "Una idea", icon: "document" },
-            { title: "Layout", detail: "Plantilla fija", icon: "gears" },
-            { title: "Export", detail: "PDF LinkedIn", icon: "flag" },
+            { title: "Hook fuerte", detail: "Curiosidad en 1s", icon: "lightbulb" },
+            { title: "Prueba visual", detail: "Dato o contraste", icon: "target" },
+            { title: "CTA claro", detail: "Una pregunta", icon: "flag" },
           ],
         },
       },
       {
         template: "cta",
+        variant: "question-big",
         data: {
-          headline: "¿Cuál es tu mayor fricción hoy?",
+          headline: "¿Qué métrica mueve tu estudio?",
           prompt: "Escríbela abajo",
           cta: "Guarda y comparte",
           icon: "network",

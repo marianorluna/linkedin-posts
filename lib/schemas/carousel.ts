@@ -1,14 +1,25 @@
 import { z } from "zod";
 import { ICON_IDS } from "@/lib/icons/registry";
+import { episodeVisualSchema } from "@/lib/schemas/episode-visual";
 import { layoutSchemaForSlots, TEMPLATE_SLOTS } from "@/lib/schemas/layout";
+import { TEMPLATE_VARIANTS } from "@/lib/schemas/variants";
 
 const short = (max: number) => z.string().trim().min(1).max(max);
 const optionalShort = (max: number) => z.string().trim().max(max).optional().default("");
 const iconIdSchema = z.enum(ICON_IDS);
 const optionalIcon = iconIdSchema.optional();
 
+const hookVariant = z.enum(TEMPLATE_VARIANTS.hook);
+const ctaVariant = z.enum(TEMPLATE_VARIANTS.cta);
+const statHeroVariant = z.enum(TEMPLATE_VARIANTS["stat-hero"]);
+const vsSplitVariant = z.enum(TEMPLATE_VARIANTS["vs-split"]);
+const ribbonStepsVariant = z.enum(TEMPLATE_VARIANTS["ribbon-steps"]);
+const iconBentoVariant = z.enum(TEMPLATE_VARIANTS["icon-bento"]);
+const defaultOnlyVariant = z.enum(TEMPLATE_VARIANTS["ab-compare"]);
+
 export const hookSlideSchema = z.object({
   template: z.literal("hook"),
+  variant: hookVariant.optional(),
   data: z.object({
     eyebrow: optionalShort(32),
     headline: short(64),
@@ -20,6 +31,7 @@ export const hookSlideSchema = z.object({
 
 export const abCompareSlideSchema = z.object({
   template: z.literal("ab-compare"),
+  variant: defaultOnlyVariant.optional(),
   data: z.object({
     headline: short(56),
     left: z.object({
@@ -40,6 +52,7 @@ export const abCompareSlideSchema = z.object({
 
 export const statHeroSlideSchema = z.object({
   template: z.literal("stat-hero"),
+  variant: statHeroVariant.optional(),
   data: z.object({
     value: short(12),
     unit: optionalShort(12),
@@ -52,6 +65,7 @@ export const statHeroSlideSchema = z.object({
 
 export const stepsSlideSchema = z.object({
   template: z.literal("steps"),
+  variant: z.enum(TEMPLATE_VARIANTS.steps).optional(),
   data: z.object({
     headline: short(56),
     steps: z
@@ -70,6 +84,7 @@ export const stepsSlideSchema = z.object({
 
 export const phoneMockSlideSchema = z.object({
   template: z.literal("phone-mock"),
+  variant: z.enum(TEMPLATE_VARIANTS["phone-mock"]).optional(),
   data: z.object({
     headline: short(56),
     caption: optionalShort(80),
@@ -81,6 +96,7 @@ export const phoneMockSlideSchema = z.object({
 
 export const ctaSlideSchema = z.object({
   template: z.literal("cta"),
+  variant: ctaVariant.optional(),
   data: z.object({
     headline: short(64),
     prompt: optionalShort(80),
@@ -92,6 +108,7 @@ export const ctaSlideSchema = z.object({
 
 export const vsSplitSlideSchema = z.object({
   template: z.literal("vs-split"),
+  variant: vsSplitVariant.optional(),
   data: z.object({
     headline: short(48),
     leftLabel: short(20),
@@ -113,6 +130,7 @@ export const vsSplitSlideSchema = z.object({
 
 export const ribbonStepsSlideSchema = z.object({
   template: z.literal("ribbon-steps"),
+  variant: ribbonStepsVariant.optional(),
   data: z.object({
     headline: short(48),
     steps: z
@@ -131,6 +149,7 @@ export const ribbonStepsSlideSchema = z.object({
 
 export const iconRowsSlideSchema = z.object({
   template: z.literal("icon-rows"),
+  variant: z.enum(TEMPLATE_VARIANTS["icon-rows"]).optional(),
   data: z.object({
     headline: short(48),
     rows: z
@@ -149,6 +168,7 @@ export const iconRowsSlideSchema = z.object({
 
 export const iconBentoSlideSchema = z.object({
   template: z.literal("icon-bento"),
+  variant: iconBentoVariant.optional(),
   data: z.object({
     headline: short(48),
     subline: optionalShort(64),
@@ -183,6 +203,7 @@ export const carouselSchema = z.object({
   title: short(80),
   topic: short(120),
   tags: z.array(short(24)).max(8).default([]),
+  visual: episodeVisualSchema.optional(),
   slides: z.array(slideSchema).min(2).max(12),
 });
 
@@ -207,9 +228,11 @@ export const sampleCarousel: CarouselContent = {
   title: "De manual a sistema",
   topic: "Productividad con IA en estudios",
   tags: ["ia", "productividad"],
+  visual: { motif: "bars", accentShift: "brand", contrast: "hard" },
   slides: [
     {
       template: "hook",
+      variant: "split-icon",
       data: {
         eyebrow: "Carrusel 01",
         headline: "El cuello de botella no es el software",
@@ -219,6 +242,7 @@ export const sampleCarousel: CarouselContent = {
     },
     {
       template: "vs-split",
+      variant: "columns",
       data: {
         headline: "Manual vs sistema",
         leftLabel: "Antes",
@@ -232,6 +256,7 @@ export const sampleCarousel: CarouselContent = {
     },
     {
       template: "ribbon-steps",
+      variant: "diagonal",
       data: {
         headline: "Cómo lo armamos",
         steps: [
@@ -243,6 +268,7 @@ export const sampleCarousel: CarouselContent = {
     },
     {
       template: "icon-bento",
+      variant: "grid",
       data: {
         headline: "Lo que cambia",
         subline: "Menos fricción visual, más mensaje.",
@@ -256,11 +282,66 @@ export const sampleCarousel: CarouselContent = {
     },
     {
       template: "cta",
+      variant: "bottom-bar",
       data: {
         headline: "¿Qué proceso te está frenando?",
         prompt: "Cuéntamelo en comentarios",
         cta: "Guarda este carrusel",
         icon: "network",
+      },
+    },
+  ],
+};
+
+/** Sample arco process — distinto del sampleCarousel (contrast). */
+export const sampleProcessCarousel: CarouselContent = {
+  title: "Brief en 4 pasos",
+  topic: "Cómo montar un carrusel sin improvisar",
+  tags: ["proceso", "linkedin"],
+  visual: { motif: "ribbons", accentShift: "brand", contrast: "soft" },
+  slides: [
+    {
+      template: "hook",
+      variant: "centered",
+      data: {
+        eyebrow: "Proceso",
+        headline: "Del brief al PDF en una tarde",
+        subline: "Sin reinventar el layout cada vez.",
+        icon: "process",
+      },
+    },
+    {
+      template: "ribbon-steps",
+      variant: "numbered-rail",
+      data: {
+        headline: "El flujo",
+        steps: [
+          { title: "Brief", detail: "Ángulo + audiencia", icon: "document" },
+          { title: "Arco", detail: "Elegir secuencia", icon: "target" },
+          { title: "Episodio", detail: "Motivo + variants", icon: "gears" },
+          { title: "Export", detail: "PDF LinkedIn", icon: "flag" },
+        ],
+      },
+    },
+    {
+      template: "steps",
+      data: {
+        headline: "Checklist rápido",
+        steps: [
+          { title: "Copy corto", detail: "1 idea / slide", icon: "check" },
+          { title: "Iconos SVG", detail: "Catálogo fijo", icon: "chip" },
+          { title: "CTA clara", detail: "Una pregunta", icon: "network" },
+        ],
+      },
+    },
+    {
+      template: "cta",
+      variant: "centered",
+      data: {
+        headline: "¿Quieres el siguiente paso del sistema?",
+        prompt: "Comenta PROCESO",
+        cta: "Guarda y aplica",
+        icon: "growth",
       },
     },
   ],

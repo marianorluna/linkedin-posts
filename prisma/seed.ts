@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { BRAND_PRESETS } from "../lib/design-tokens";
-import { sampleCarousel, TEMPLATE_SLUGS } from "../lib/schemas/carousel";
+import { sampleCarousel, sampleProcessCarousel, TEMPLATE_SLUGS } from "../lib/schemas/carousel";
 
 const prisma = new PrismaClient();
 
@@ -73,7 +73,29 @@ async function main() {
         versions: {
           create: {
             contentJson: JSON.stringify(sampleCarousel),
-            promptMeta: JSON.stringify({ source: "seed" }),
+            promptMeta: JSON.stringify({ source: "seed", arc: "contrast" }),
+          },
+        },
+      },
+    });
+  }
+
+  const existingProcess = await prisma.post.findFirst({
+    where: { title: sampleProcessCarousel.title },
+  });
+
+  if (!existingProcess) {
+    await prisma.post.create({
+      data: {
+        title: sampleProcessCarousel.title,
+        topic: sampleProcessCarousel.topic,
+        tags: JSON.stringify(sampleProcessCarousel.tags),
+        status: "ready",
+        brandKitId: lightKitId,
+        versions: {
+          create: {
+            contentJson: JSON.stringify(sampleProcessCarousel),
+            promptMeta: JSON.stringify({ source: "seed", arc: "process" }),
           },
         },
       },
