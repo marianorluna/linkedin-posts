@@ -26,6 +26,7 @@ const patchSchema = z.object({
   status: z.enum(["draft", "ready", "archived"]).optional(),
   content: carouselSchema.optional(),
   promptMeta: z.unknown().optional(),
+  brandKitId: z.string().min(1).optional(),
 });
 
 export async function PATCH(request: Request, { params }: Params) {

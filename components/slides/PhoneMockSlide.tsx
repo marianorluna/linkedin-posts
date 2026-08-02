@@ -35,7 +35,7 @@ export function PhoneMockSlide({ tokens, data }: Props) {
               style={{ background: "var(--slide-bg-elevated)" }}
             >
               <p
-                className="font-[family-name:var(--font-mono)] text-[18px] tracking-[0.14em] uppercase"
+                className="font-[family-name:var(--slide-font-mono)] text-[18px] tracking-[0.14em] uppercase"
                 style={{ color: "var(--slide-accent)" }}
               >
                 {data.screenTitle}
@@ -44,7 +44,7 @@ export function PhoneMockSlide({ tokens, data }: Props) {
                 {data.screenLines.map((line) => (
                   <li
                     key={line}
-                    className="rounded-[14px] px-5 py-4 font-[family-name:var(--font-body)] text-[22px]"
+                    className="rounded-[14px] px-5 py-4 font-[family-name:var(--slide-font-body)] text-[22px]"
                     style={{
                       background: "var(--slide-accent-soft)",
                       border: "1px solid var(--slide-stroke)",

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/infra/prisma";
+import { resolveDefaultBrandKitId } from "@/lib/domain/brand-kit-service";
 import {
   assertPostStatus,
   parseBrandTokens,
@@ -82,12 +83,10 @@ export async function createPost(input: {
   content: CarouselContent;
   status?: string;
   promptMeta?: unknown;
+  brandKitId?: string;
 }) {
   const content = carouselSchema.parse(input.content);
-  const brandKit = await prisma.brandKit.findFirst({ orderBy: { createdAt: "asc" } });
-  if (!brandKit) {
-    throw new Error("No hay BrandKit. Ejecuta pnpm db:seed");
-  }
+  const brandKitId = input.brandKitId ?? (await resolveDefaultBrandKitId());
 
   return prisma.post.create({
     data: {
@@ -95,7 +94,7 @@ export async function createPost(input: {
       topic: content.topic,
       tags: JSON.stringify(content.tags),
       status: input.status ?? "draft",
-      brandKitId: brandKit.id,
+      brandKitId,
       versions: {
         create: {
           contentJson: JSON.stringify(content),
@@ -109,7 +108,13 @@ export async function createPost(input: {
 
 export async function updatePostMeta(
   id: string,
-  input: { title?: string; topic?: string; tags?: string[]; status?: string },
+  input: {
+    title?: string;
+    topic?: string;
+    tags?: string[];
+    status?: string;
+    brandKitId?: string;
+  },
 ) {
   return prisma.post.update({
     where: { id },
@@ -118,6 +123,7 @@ export async function updatePostMeta(
       ...(input.topic !== undefined ? { topic: input.topic } : {}),
       ...(input.tags !== undefined ? { tags: JSON.stringify(input.tags) } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
+      ...(input.brandKitId !== undefined ? { brandKitId: input.brandKitId } : {}),
     },
   });
 }

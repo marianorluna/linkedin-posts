@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PostCard } from "@/components/studio/PostCard";
 import { listPosts } from "@/lib/domain/post-service";
 
 export const dynamic = "force-dynamic";
@@ -33,36 +34,10 @@ export default async function HomePage() {
           No hay posts todavía. Crea el primero o ejecuta <code className="text-[var(--accent)]">pnpm db:seed</code>.
         </div>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul className="grid auto-rows-fr gap-4 sm:grid-cols-2">
           {posts.map((post) => (
-            <li key={post.id}>
-              <Link
-                href={`/posts/${post.id}`}
-                className="block rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 transition hover:border-[color-mix(in_srgb,var(--accent)_40%,transparent)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-[family-name:var(--font-display)] text-xl tracking-tight">
-                    {post.title}
-                  </h2>
-                  <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-xs text-[var(--muted)]">
-                    {post.status}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-[var(--muted)]">{post.topic}</p>
-                <div className="mt-4 flex flex-wrap gap-2 text-xs text-[var(--muted)]">
-                  <span>{post.slideCount} slides</span>
-                  <span>·</span>
-                  <span>{post.versionCount} versiones</span>
-                  {post.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-white/5 px-2 py-0.5 text-[var(--accent)]"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </Link>
+            <li key={post.id} className="h-full">
+              <PostCard post={post} />
             </li>
           ))}
         </ul>

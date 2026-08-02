@@ -1,5 +1,5 @@
 import type { BrandTokens } from "@/lib/design-tokens";
-import { defaultBrandTokens } from "@/lib/design-tokens";
+import { deepMergeBrandTokens } from "@/lib/design-tokens";
 import type { CarouselContent } from "@/lib/schemas/carousel";
 import { carouselSchema } from "@/lib/schemas/carousel";
 
@@ -20,9 +20,9 @@ export function parseContentJson(raw: string): CarouselContent {
 
 export function parseBrandTokens(raw: string): BrandTokens {
   try {
-    return { ...defaultBrandTokens, ...(JSON.parse(raw) as BrandTokens) };
+    return deepMergeBrandTokens(JSON.parse(raw) as unknown);
   } catch {
-    return defaultBrandTokens;
+    return deepMergeBrandTokens(null);
   }
 }
 

@@ -1,5 +1,6 @@
-import { Instrument_Sans, JetBrains_Mono, Syne } from "next/font/google";
+import { DM_Sans, Instrument_Sans, JetBrains_Mono, Space_Grotesk, Syne } from "next/font/google";
 import type { Metadata } from "next";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import "./globals.css";
 
 const syne = Syne({
@@ -20,6 +21,18 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space",
+  weight: ["400", "500", "600", "700"],
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm",
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Studio Infografías LinkedIn",
   description: "Carruseles 1080×1080 con estilo propio y export PDF",
@@ -29,10 +42,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="es"
-      className={`${syne.variable} ${instrument.variable} ${jetbrains.variable} h-full`}
+      className={`${syne.variable} ${instrument.variable} ${jetbrains.variable} ${spaceGrotesk.variable} ${dmSans.variable} h-full`}
     >
-      <body className="min-h-full bg-[#0b1015] font-[family-name:var(--font-body)] text-[#e8eef4] antialiased">
-        {children}
+      <body
+        className="min-h-full bg-[#0b1015] font-[family-name:var(--font-body)] text-[#e8eef4] antialiased"
+        suppressHydrationWarning
+      >
+        <ConfirmProvider>{children}</ConfirmProvider>
       </body>
     </html>
   );

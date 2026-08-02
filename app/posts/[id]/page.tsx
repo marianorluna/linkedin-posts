@@ -20,6 +20,7 @@ export default async function PostEditorPage({ params }: Props) {
       versionId={post.latestVersionId}
       initialContent={post.content}
       tokens={post.brandKit.tokens}
+      brandKitId={post.brandKit.id}
       status={post.status}
       assets={latestAssets}
     />

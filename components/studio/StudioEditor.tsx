@@ -1,13 +1,41 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SlideRenderer } from "@/components/slides/SlideRenderer";
+import { IconPicker } from "@/components/studio/IconPicker";
+import { StylePanel, type BrandKitOption } from "@/components/studio/StylePanel";
 import type { BrandTokens } from "@/lib/design-tokens";
-import { SLIDE_SIZE } from "@/lib/design-tokens";
+import { BRAND_PRESETS, SLIDE_SIZE, deepMergeBrandTokens } from "@/lib/design-tokens";
+import type { IconId } from "@/lib/icons/registry";
 import type { CarouselContent, SlideContent, TemplateSlug } from "@/lib/schemas/carousel";
 import { TEMPLATE_SLUGS } from "@/lib/schemas/carousel";
+
+function usePreviewScale() {
+  const [scale, setScale] = useState(0.42);
+
+  useEffect(() => {
+    const mqMobile = window.matchMedia("(max-width: 767px)");
+    const mqTablet = window.matchMedia("(min-width: 768px) and (max-width: 1023px)");
+
+    function update() {
+      if (mqMobile.matches) setScale(0.28);
+      else if (mqTablet.matches) setScale(0.34);
+      else setScale(0.42);
+    }
+
+    update();
+    mqMobile.addEventListener("change", update);
+    mqTablet.addEventListener("change", update);
+    return () => {
+      mqMobile.removeEventListener("change", update);
+      mqTablet.removeEventListener("change", update);
+    };
+  }, []);
+
+  return scale;
+}
 
 type Asset = {
   id: string;
@@ -22,6 +50,7 @@ type StudioEditorProps = {
   versionId?: string | null;
   initialContent: CarouselContent;
   tokens: BrandTokens;
+  brandKitId?: string | null;
   status?: string;
   assets?: Asset[];
 };
@@ -29,7 +58,10 @@ type StudioEditorProps = {
 function emptySlide(template: TemplateSlug): SlideContent {
   switch (template) {
     case "hook":
-      return { template, data: { eyebrow: "Nuevo", headline: "Titular corto", subline: "" } };
+      return {
+        template,
+        data: { eyebrow: "Nuevo", headline: "Titular corto", subline: "", icon: "lightbulb" },
+      };
     case "ab-compare":
       return {
         template,
@@ -38,19 +70,23 @@ function emptySlide(template: TemplateSlug): SlideContent {
           left: { label: "A", value: 30, caption: "" },
           right: { label: "B", value: 80, caption: "" },
           footer: "",
+          icon: "chart-up",
         },
       };
     case "stat-hero":
-      return { template, data: { value: "90%", unit: "", headline: "Resultado", detail: "" } };
+      return {
+        template,
+        data: { value: "90%", unit: "", headline: "Resultado", detail: "", icon: "growth" },
+      };
     case "steps":
       return {
         template,
         data: {
           headline: "Pasos",
           steps: [
-            { title: "Uno", detail: "" },
-            { title: "Dos", detail: "" },
-            { title: "Tres", detail: "" },
+            { title: "Uno", detail: "", icon: "document" },
+            { title: "Dos", detail: "", icon: "gears" },
+            { title: "Tres", detail: "", icon: "flag" },
           ],
         },
       };
@@ -65,7 +101,62 @@ function emptySlide(template: TemplateSlug): SlideContent {
         },
       };
     case "cta":
-      return { template, data: { headline: "Pregunta final", prompt: "", cta: "Comenta abajo" } };
+      return {
+        template,
+        data: { headline: "Pregunta final", prompt: "", cta: "Comenta abajo", icon: "network" },
+      };
+    case "vs-split":
+      return {
+        template,
+        data: {
+          headline: "Comparativa",
+          leftLabel: "A",
+          rightLabel: "B",
+          rows: [
+            { topic: "Idea", left: "Lado A", right: "Lado B", icon: "lightbulb" },
+            { topic: "Proceso", left: "Manual", right: "Sistema", icon: "process" },
+            { topic: "Resultado", left: "Lento", right: "Rápido", icon: "growth" },
+          ],
+        },
+      };
+    case "ribbon-steps":
+      return {
+        template,
+        data: {
+          headline: "Pasos",
+          steps: [
+            { title: "Paso uno", detail: "Detalle", icon: "document" },
+            { title: "Paso dos", detail: "Detalle", icon: "gears" },
+            { title: "Paso tres", detail: "Detalle", icon: "flag" },
+          ],
+        },
+      };
+    case "icon-rows":
+      return {
+        template,
+        data: {
+          headline: "Claves",
+          rows: [
+            { title: "Fila uno", detail: "Detalle", icon: "target" },
+            { title: "Fila dos", detail: "Detalle", icon: "users" },
+            { title: "Fila tres", detail: "Detalle", icon: "check" },
+          ],
+        },
+      };
+    case "icon-bento":
+      return {
+        template,
+        data: {
+          headline: "Mapa",
+          subline: "",
+          cells: [
+            { label: "Celda A", detail: "", icon: "chip" },
+            { label: "Celda B", detail: "", icon: "brain" },
+            { label: "Celda C", detail: "", icon: "globe" },
+            { label: "Celda D", detail: "", icon: "robot" },
+          ],
+        },
+      };
     default: {
       const _exhaustive: never = template;
       return _exhaustive;
@@ -78,7 +169,8 @@ export function StudioEditor({
   postId,
   versionId: initialVersionId,
   initialContent,
-  tokens,
+  tokens: initialTokens,
+  brandKitId: initialBrandKitId = null,
   status = "draft",
   assets = [],
 }: StudioEditorProps) {
@@ -92,9 +184,33 @@ export function StudioEditor({
     assets.find((a) => a.format === "pdf")?.id ?? null,
   );
   const [pending, startTransition] = useTransition();
+  const [tokens, setTokens] = useState(initialTokens);
+  const [kits, setKits] = useState<BrandKitOption[]>([]);
+  const [presets, setPresets] = useState<Array<{ key: string; name: string }>>([]);
+  const [selectedKitId, setSelectedKitId] = useState<string | null>(initialBrandKitId);
 
   const activeSlide = content.slides[activeIndex];
-  const scale = useMemo(() => 0.42, []);
+  const scale = usePreviewScale();
+
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch("/api/brand-kits");
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        kits: BrandKitOption[];
+        presets: Array<{ key: string; name: string }>;
+      };
+      setKits(data.kits);
+      setPresets(data.presets);
+      if (!selectedKitId && data.kits[0]) {
+        const preferred =
+          data.kits.find((k) => k.name === "Light Infographic") ?? data.kits[0];
+        setSelectedKitId(preferred.id);
+        if (mode === "create") setTokens(preferred.tokens);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once
+  }, []);
 
   function updateSlide(index: number, slide: SlideContent) {
     setContent((prev) => ({
@@ -113,6 +229,63 @@ export function StudioEditor({
       return { ...prev, slides };
     });
     setActiveIndex(target);
+  }
+
+  async function persistTokens(next: BrandTokens, kitId: string | null = selectedKitId) {
+    setTokens(next);
+    if (!kitId) return;
+    await fetch(`/api/brand-kits/${kitId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tokens: next }),
+    });
+  }
+
+  async function selectKit(kitId: string) {
+    setSelectedKitId(kitId);
+    const kit = kits.find((k) => k.id === kitId);
+    if (kit) setTokens(kit.tokens);
+    if (mode === "edit" && postId) {
+      await fetch(`/api/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandKitId: kitId }),
+      });
+    }
+  }
+
+  async function applyPreset(presetKey: string) {
+    const preset = BRAND_PRESETS[presetKey];
+    if (!preset) return;
+    const next = deepMergeBrandTokens(preset.tokens);
+    setTokens(next);
+
+    if (selectedKitId) {
+      const res = await fetch(`/api/brand-kits/${selectedKitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presetKey }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { kit: BrandKitOption };
+        setKits((prev) => prev.map((k) => (k.id === data.kit.id ? data.kit : k)));
+        setMessage(`Preset «${preset.name}» aplicado`);
+        return;
+      }
+    }
+
+    const res = await fetch("/api/brand-kits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ presetKey }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { kit: BrandKitOption };
+      setKits((prev) => [...prev, data.kit]);
+      setSelectedKitId(data.kit.id);
+      setTokens(data.kit.tokens);
+      setMessage(`Kit «${data.kit.name}» creado`);
+    }
   }
 
   async function generate() {
@@ -142,12 +315,23 @@ export function StudioEditor({
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, status: "draft" }),
+        body: JSON.stringify({
+          content,
+          status: "draft",
+          brandKitId: selectedKitId ?? undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setMessage(data.error ?? "Error al guardar");
         return;
+      }
+      if (selectedKitId) {
+        await fetch(`/api/brand-kits/${selectedKitId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tokens }),
+        });
       }
       setMessage("Guardado");
       router.push(`/posts/${data.id}`);
@@ -155,10 +339,22 @@ export function StudioEditor({
       return;
     }
 
+    if (selectedKitId) {
+      await fetch(`/api/brand-kits/${selectedKitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tokens }),
+      });
+    }
+
     const res = await fetch(`/api/posts/${postId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, status }),
+      body: JSON.stringify({
+        content,
+        status,
+        brandKitId: selectedKitId ?? undefined,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -172,10 +368,10 @@ export function StudioEditor({
 
   async function exportPdf() {
     if (!versionId) {
-      setMessage("Guarda una versión antes de exportar");
+      setMessage("Guarda una versión antes de crear el PDF");
       return;
     }
-    setMessage("Exportando PDF… (asegura que el servidor esté en :3000)");
+    setMessage("Creando PDF… (asegura que el servidor esté en :3000)");
     const res = await fetch("/api/export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -183,7 +379,7 @@ export function StudioEditor({
     });
     const data = await res.json();
     if (!res.ok) {
-      setMessage(data.error ?? "Error de export");
+      setMessage(data.error ?? "Error al crear el PDF");
       return;
     }
     setExportAssetId(data.assetId);
@@ -191,188 +387,214 @@ export function StudioEditor({
   }
 
   return (
-    <div className="mx-auto grid min-h-screen w-full max-w-[1400px] gap-6 px-4 py-6 lg:grid-cols-[240px_1fr_320px]">
-      <aside className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4">
-        <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--accent)]">
-          ← Galería
-        </Link>
-        <h2 className="mt-4 font-[family-name:var(--font-display)] text-lg">Slides</h2>
-        <ul className="mt-3 space-y-2">
-          {content.slides.map((slide, index) => (
-            <li key={`${slide.template}-${index}`}>
+    <div className="box-border h-dvh w-full overflow-hidden p-3 md:p-4">
+      <div
+        className={[
+          "grid h-full min-h-0 gap-3 md:gap-4",
+          "grid-rows-[minmax(0,26vh)_auto_minmax(0,1fr)]",
+          "md:grid-cols-[200px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]",
+          "lg:grid-cols-[240px_minmax(0,1fr)_minmax(280px,360px)] lg:grid-rows-1",
+        ].join(" ")}
+      >
+        <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] md:row-span-2 lg:row-span-1">
+          <div className="studio-scroll min-h-0 flex-1 overflow-y-auto p-4">
+            <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--accent)]">
+              ← Galería
+            </Link>
+            <h2 className="mt-4 font-[family-name:var(--font-display)] text-lg">Slides</h2>
+            <ul className="mt-3 space-y-2">
+              {content.slides.map((slide, index) => (
+                <li key={`${slide.template}-${index}`}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveIndex(index)}
+                    className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
+                      index === activeIndex
+                        ? "bg-[color-mix(in_srgb,var(--accent)_18%,transparent)] text-[var(--accent)]"
+                        : "bg-white/5 text-[var(--muted)] hover:bg-white/10"
+                    }`}
+                  >
+                    {index + 1}. {slide.template}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setActiveIndex(index)}
-                className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-                  index === activeIndex
-                    ? "bg-[color-mix(in_srgb,var(--accent)_18%,transparent)] text-[var(--accent)]"
-                    : "bg-white/5 text-[var(--muted)] hover:bg-white/10"
-                }`}
+                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
+                onClick={() => moveSlide(activeIndex, -1)}
               >
-                {index + 1}. {slide.template}
+                Subir
               </button>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
-            onClick={() => moveSlide(activeIndex, -1)}
-          >
-            Subir
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
-            onClick={() => moveSlide(activeIndex, 1)}
-          >
-            Bajar
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
-            onClick={() => {
-              setContent((prev) => ({
-                ...prev,
-                slides: prev.slides.filter((_, i) => i !== activeIndex),
-              }));
-              setActiveIndex((i) => Math.max(0, i - 1));
-            }}
-            disabled={content.slides.length <= 2}
-          >
-            Quitar
-          </button>
-        </div>
-        <label className="mt-4 block text-xs text-[var(--muted)]">Añadir plantilla</label>
-        <select
-          className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-2 py-2 text-sm"
-          defaultValue=""
-          onChange={(e) => {
-            const value = e.target.value as TemplateSlug;
-            if (!value) return;
-            setContent((prev) => ({ ...prev, slides: [...prev.slides, emptySlide(value)] }));
-            setActiveIndex(content.slides.length);
-            e.target.value = "";
-          }}
-        >
-          <option value="">Elegir…</option>
-          {TEMPLATE_SLUGS.map((slug) => (
-            <option key={slug} value={slug}>
-              {slug}
-            </option>
-          ))}
-        </select>
-      </aside>
-
-      <section className="flex flex-col items-center gap-4">
-        <div className="w-full rounded-2xl border border-[var(--panel-border)] bg-black/40 p-4">
-          <div
-            className="mx-auto overflow-hidden rounded-xl"
-            style={{
-              width: SLIDE_SIZE * scale,
-              height: SLIDE_SIZE * scale,
-            }}
-          >
-            <div
-              style={{
-                width: SLIDE_SIZE,
-                height: SLIDE_SIZE,
-                transform: `scale(${scale})`,
-                transformOrigin: "top left",
+              <button
+                type="button"
+                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
+                onClick={() => moveSlide(activeIndex, 1)}
+              >
+                Bajar
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
+                onClick={() => {
+                  setContent((prev) => ({
+                    ...prev,
+                    slides: prev.slides.filter((_, i) => i !== activeIndex),
+                  }));
+                  setActiveIndex((i) => Math.max(0, i - 1));
+                }}
+                disabled={content.slides.length <= 2}
+              >
+                Quitar
+              </button>
+            </div>
+            <label className="mt-4 block text-xs text-[var(--muted)]">Añadir plantilla</label>
+            <select
+              className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-2 py-2 text-sm"
+              defaultValue=""
+              onChange={(e) => {
+                const value = e.target.value as TemplateSlug;
+                if (!value) return;
+                setContent((prev) => ({ ...prev, slides: [...prev.slides, emptySlide(value)] }));
+                setActiveIndex(content.slides.length);
+                e.target.value = "";
               }}
             >
-              {activeSlide ? <SlideRenderer slide={activeSlide} tokens={tokens} /> : null}
+              <option value="">Elegir…</option>
+              {TEMPLATE_SLUGS.map((slug) => (
+                <option key={slug} value={slug}>
+                  {slug}
+                </option>
+              ))}
+            </select>
+          </div>
+        </aside>
+
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-black/40">
+          <div className="studio-scroll flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-4">
+            <div
+              className="mx-auto shrink-0 overflow-hidden rounded-xl"
+              style={{
+                width: SLIDE_SIZE * scale,
+                height: SLIDE_SIZE * scale,
+              }}
+            >
+              <div
+                style={{
+                  width: SLIDE_SIZE,
+                  height: SLIDE_SIZE,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top left",
+                }}
+              >
+                {activeSlide ? <SlideRenderer slide={activeSlide} tokens={tokens} /> : null}
+              </div>
             </div>
           </div>
-        </div>
-        {message ? <p className="text-sm text-[var(--accent)]">{message}</p> : null}
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => startTransition(() => void save())}
-            className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[#0b1015]"
-          >
-            Guardar versión
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => startTransition(() => void exportPdf())}
-            className="rounded-full border border-[var(--panel-border)] px-5 py-2.5 text-sm"
-          >
-            Exportar PDF
-          </button>
-          {exportAssetId ? (
-            <a
-              href={`/api/assets/${exportAssetId}`}
-              className="rounded-full border border-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent)]"
-            >
-              Descargar PDF
-            </a>
-          ) : null}
-        </div>
-      </section>
+          <div className="shrink-0 space-y-3 border-t border-[var(--panel-border)] p-4">
+            {message ? <p className="text-center text-sm text-[var(--accent)]">{message}</p> : null}
+            <div className="flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => startTransition(() => void save())}
+                className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[#0b1015]"
+              >
+                Guardar versión
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => startTransition(() => void exportPdf())}
+                className="rounded-full border border-[var(--panel-border)] px-5 py-2.5 text-sm"
+              >
+                Crear PDF
+              </button>
+              {exportAssetId ? (
+                <a
+                  href={`/api/assets/${exportAssetId}`}
+                  className="rounded-full border border-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent)]"
+                >
+                  Descargar PDF
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </section>
 
-      <aside className="space-y-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4">
-        <div>
-          <label className="text-xs text-[var(--muted)]">Brief / tema</label>
-          <textarea
-            value={brief}
-            onChange={(e) => setBrief(e.target.value)}
-            rows={3}
-            className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            onClick={() => startTransition(() => void generate())}
-            className="mt-2 w-full rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
-          >
-            Generar con IA
-          </button>
-        </div>
+        <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] md:col-start-2 md:row-start-2 lg:col-start-auto lg:row-start-auto">
+          <div className="studio-scroll min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+            <div>
+              <label className="text-xs text-[var(--muted)]">Brief / tema</label>
+              <textarea
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => startTransition(() => void generate())}
+                className="mt-2 w-full rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
+              >
+                Generar con IA
+              </button>
+            </div>
 
-        <div>
-          <label className="text-xs text-[var(--muted)]">Título del post</label>
-          <input
-            value={content.title}
-            onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
-            className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-[var(--muted)]">Topic</label>
-          <input
-            value={content.topic}
-            onChange={(e) => setContent((c) => ({ ...c, topic: e.target.value }))}
-            className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-[var(--muted)]">Tags (coma)</label>
-          <input
-            value={content.tags.join(", ")}
-            onChange={(e) =>
-              setContent((c) => ({
-                ...c,
-                tags: e.target.value
-                  .split(",")
-                  .map((t) => t.trim())
-                  .filter(Boolean),
-              }))
-            }
-            className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-          />
-        </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">Título del post</label>
+              <input
+                value={content.title}
+                onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">Topic</label>
+              <input
+                value={content.topic}
+                onChange={(e) => setContent((c) => ({ ...c, topic: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">Tags (coma)</label>
+              <input
+                value={content.tags.join(", ")}
+                onChange={(e) =>
+                  setContent((c) => ({
+                    ...c,
+                    tags: e.target.value
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean),
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+            </div>
 
-        {activeSlide ? (
-          <SlideFields
-            slide={activeSlide}
-            onChange={(slide) => updateSlide(activeIndex, slide)}
-          />
-        ) : null}
-      </aside>
+            <StylePanel
+              tokens={tokens}
+              kits={kits}
+              presets={presets}
+              selectedKitId={selectedKitId}
+              onTokensChange={(next) => void persistTokens(next)}
+              onSelectKit={(id) => void selectKit(id)}
+              onApplyPreset={(key) => void applyPreset(key)}
+              persistHint="Los cambios de estilo se guardan en el BrandKit al editar colores o al Guardar."
+            />
+
+            {activeSlide ? (
+              <SlideFields
+                slide={activeSlide}
+                onChange={(slide) => updateSlide(activeIndex, slide)}
+              />
+            ) : null}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -427,6 +649,10 @@ function SlideFields({
             label="Subline"
             value={slide.data.subline ?? ""}
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, subline: v } })}
+          />
+          <IconPicker
+            value={slide.data.icon}
+            onChange={(icon) => onChange({ ...slide, data: { ...slide.data, icon } })}
           />
         </div>
       );
@@ -483,6 +709,10 @@ function SlideFields({
             value={slide.data.footer ?? ""}
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, footer: v } })}
           />
+          <IconPicker
+            value={slide.data.icon}
+            onChange={(icon) => onChange({ ...slide, data: { ...slide.data, icon } })}
+          />
         </div>
       );
     case "stat-hero":
@@ -503,6 +733,10 @@ function SlideFields({
             label="Detail"
             value={slide.data.detail ?? ""}
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, detail: v } })}
+          />
+          <IconPicker
+            value={slide.data.icon}
+            onChange={(icon) => onChange({ ...slide, data: { ...slide.data, icon } })}
           />
         </div>
       );
@@ -533,6 +767,16 @@ function SlideFields({
                 onChange={(v) => {
                   const steps = slide.data.steps.map((s, idx) =>
                     idx === i ? { ...s, detail: v } : s,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, steps } });
+                }}
+              />
+              <IconPicker
+                label={`Paso ${i + 1} icono`}
+                value={step.icon}
+                onChange={(icon) => {
+                  const steps = slide.data.steps.map((s, idx) =>
+                    idx === i ? { ...s, icon } : s,
                   );
                   onChange({ ...slide, data: { ...slide.data, steps } });
                 }}
@@ -597,6 +841,217 @@ function SlideFields({
             value={slide.data.cta}
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, cta: v } })}
           />
+          <IconPicker
+            value={slide.data.icon}
+            onChange={(icon) => onChange({ ...slide, data: { ...slide.data, icon } })}
+          />
+        </div>
+      );
+    case "vs-split":
+      return (
+        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
+          <p className="text-sm font-medium">Slide VS</p>
+          <Field
+            label="Headline"
+            value={slide.data.headline}
+            onChange={(v) => onChange({ ...slide, data: { ...slide.data, headline: v } })}
+          />
+          <Field
+            label="Label izq."
+            value={slide.data.leftLabel}
+            onChange={(v) => onChange({ ...slide, data: { ...slide.data, leftLabel: v } })}
+          />
+          <Field
+            label="Label der."
+            value={slide.data.rightLabel}
+            onChange={(v) => onChange({ ...slide, data: { ...slide.data, rightLabel: v } })}
+          />
+          {slide.data.rows.map((row, i) => (
+            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+              <Field
+                label={`Fila ${i + 1} topic`}
+                value={row.topic}
+                onChange={(v) => {
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, topic: v } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+              <Field
+                label="Izquierda"
+                value={row.left}
+                onChange={(v) => {
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, left: v } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+              <Field
+                label="Derecha"
+                value={row.right}
+                onChange={(v) => {
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, right: v } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+              <IconPicker
+                allowEmpty={false}
+                value={row.icon}
+                onChange={(icon) => {
+                  if (!icon) return;
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, icon } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    case "ribbon-steps":
+      return (
+        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
+          <p className="text-sm font-medium">Slide ribbon</p>
+          <Field
+            label="Headline"
+            value={slide.data.headline}
+            onChange={(v) => onChange({ ...slide, data: { ...slide.data, headline: v } })}
+          />
+          {slide.data.steps.map((step, i) => (
+            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+              <Field
+                label={`Paso ${i + 1}`}
+                value={step.title}
+                onChange={(v) => {
+                  const steps = slide.data.steps.map((s, idx) =>
+                    idx === i ? { ...s, title: v } : s,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, steps } });
+                }}
+              />
+              <Field
+                label="Detail"
+                value={step.detail ?? ""}
+                onChange={(v) => {
+                  const steps = slide.data.steps.map((s, idx) =>
+                    idx === i ? { ...s, detail: v } : s,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, steps } });
+                }}
+              />
+              <IconPicker
+                value={step.icon}
+                onChange={(icon) => {
+                  const steps = slide.data.steps.map((s, idx) =>
+                    idx === i ? { ...s, icon } : s,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, steps } });
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    case "icon-rows":
+      return (
+        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
+          <p className="text-sm font-medium">Slide icon-rows</p>
+          <Field
+            label="Headline"
+            value={slide.data.headline}
+            onChange={(v) => onChange({ ...slide, data: { ...slide.data, headline: v } })}
+          />
+          {slide.data.rows.map((row, i) => (
+            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+              <Field
+                label={`Fila ${i + 1}`}
+                value={row.title}
+                onChange={(v) => {
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, title: v } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+              <Field
+                label="Detail"
+                value={row.detail ?? ""}
+                onChange={(v) => {
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, detail: v } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+              <IconPicker
+                allowEmpty={false}
+                value={row.icon}
+                onChange={(icon) => {
+                  if (!icon) return;
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, icon } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    case "icon-bento":
+      return (
+        <div className="space-y-3 border-t border-[var(--panel-border)] pt-4">
+          <p className="text-sm font-medium">Slide bento</p>
+          <Field
+            label="Headline"
+            value={slide.data.headline}
+            onChange={(v) => onChange({ ...slide, data: { ...slide.data, headline: v } })}
+          />
+          <Field
+            label="Subline"
+            value={slide.data.subline ?? ""}
+            onChange={(v) => onChange({ ...slide, data: { ...slide.data, subline: v } })}
+          />
+          {slide.data.cells.map((cell, i) => (
+            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+              <Field
+                label={`Celda ${i + 1}`}
+                value={cell.label}
+                onChange={(v) => {
+                  const cells = slide.data.cells.map((c, idx) =>
+                    idx === i ? { ...c, label: v } : c,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, cells } });
+                }}
+              />
+              <Field
+                label="Detail"
+                value={cell.detail ?? ""}
+                onChange={(v) => {
+                  const cells = slide.data.cells.map((c, idx) =>
+                    idx === i ? { ...c, detail: v } : c,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, cells } });
+                }}
+              />
+              <IconPicker
+                allowEmpty={false}
+                value={cell.icon}
+                onChange={(icon: IconId | undefined) => {
+                  if (!icon) return;
+                  const cells = slide.data.cells.map((c, idx) =>
+                    idx === i ? { ...c, icon } : c,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, cells } });
+                }}
+              />
+            </div>
+          ))}
         </div>
       );
     default: {

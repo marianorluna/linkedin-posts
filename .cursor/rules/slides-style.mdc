@@ -1,5 +1,5 @@
 ---
-description: Estilo visual de diapositivas 1080x1080 (wireframe moderno)
+description: Estilo visual de diapositivas 1080x1080 (BrandKit + moods)
 globs: components/slides/**
 alwaysApply: false
 ---
@@ -8,8 +8,10 @@ alwaysApply: false
 
 - Tamaño fijo 1080×1080 vía `SlideFrame`. No cambies el tamaño ad hoc.
 - Usa CSS variables del BrandKit (`--slide-*`), no colores hardcodeados sueltos.
-- Tipografías: display (`--font-display`), body (`--font-body`), mono (`--font-mono`).
-- Look wireframe moderno: stroke fino, aire, poco texto, sin cards innecesarias en el hero de la slide.
-- Evita: purple gradients genéricos, Inter/Roboto/Arial, overflow de copy, badges flotantes.
+- Tipografías vía tokens: `--slide-font-display`, `--slide-font-body`, `--slide-font-mono` (pares: syne-instrument, space-grotesk, dm-sans).
+- Moods permitidos: `dark-wire`, `light-flat`, `bold-blocks`. Respeta el mood del BrandKit.
+- Formas reutilizables: `components/slides/primitives/*` + `SlideIcon` (SVG del catálogo).
+- Look limpio tipo infografía: stroke fino o bloques de color, aire, poco texto.
+- Evita: purple gradients genéricos, Inter/Roboto/Arial, overflow de copy, badges flotantes sueltos, emojis Unicode.
 - Phone mock: usa el patrón existente en `PhoneMockSlide`.
-- Una composición clara; no satures con icon rows ni stat strips.
+- Una composición clara; no satures con demasiados elementos decorativos.

@@ -12,6 +12,7 @@ const createBodySchema = z.object({
   content: carouselSchema,
   status: z.enum(["draft", "ready", "archived"]).optional(),
   promptMeta: z.unknown().optional(),
+  brandKitId: z.string().min(1).optional(),
 });
 
 export async function POST(request: Request) {

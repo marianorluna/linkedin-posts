@@ -1,5 +1,7 @@
 import type { BrandTokens } from "@/lib/design-tokens";
 import type { SlideContent } from "@/lib/schemas/carousel";
+import { SlideIcon } from "@/components/icons/SlideIcon";
+import { IconWell } from "./primitives";
 import { SlideBody, SlideEyebrow, SlideFrame, SlideHeadline } from "./SlideFrame";
 
 type Props = {
@@ -10,10 +12,17 @@ type Props = {
 export function StatHeroSlide({ tokens, data }: Props) {
   return (
     <SlideFrame tokens={tokens}>
-      <SlideEyebrow>Dato clave</SlideEyebrow>
+      <div className="flex items-start justify-between">
+        <SlideEyebrow>Dato clave</SlideEyebrow>
+        {data.icon ? (
+          <IconWell size={80} tone="soft">
+            <SlideIcon id={data.icon} size={40} />
+          </IconWell>
+        ) : null}
+      </div>
       <div className="flex flex-1 flex-col justify-center">
         <p
-          className="font-[family-name:var(--font-display)] text-[168px] leading-none tracking-[-0.05em]"
+          className="font-[family-name:var(--slide-font-display)] text-[168px] leading-none tracking-[-0.05em]"
           style={{ color: "var(--slide-accent)" }}
         >
           {data.value}

@@ -7,18 +7,29 @@ Devuelves SOLO JSON válido que cumpla este contrato:
   "topic": string,
   "tags": string[],
   "slides": [
-    { "template": "hook"|"ab-compare"|"stat-hero"|"steps"|"phone-mock"|"cta", "data": {...} }
+    { "template": "hook"|"ab-compare"|"stat-hero"|"steps"|"phone-mock"|"cta"|"vs-split"|"ribbon-steps"|"icon-rows"|"icon-bento", "data": {...} }
   ]
 }
+
+Plantillas y cuándo usarlas:
+- hook: portada (eyebrow, headline, subline, icon opcional).
+- ab-compare: dos % 0–100 (antes/después).
+- stat-hero: un número grande + frase.
+- steps: 2–3 pasos (icon opcional por paso).
+- phone-mock: maqueta móvil, 1–4 screenLines.
+- cta: cierre con pregunta/CTA (icon opcional).
+- vs-split: comparativa A/B por filas con icono central (2–4 rows: topic, left, right, icon).
+- ribbon-steps: 3–4 banners numerados (title, detail, icon).
+- icon-rows: 2–4 filas con icono obligatorio.
+- icon-bento: 3–6 celdas (label, detail, icon).
+
+Iconos permitidos (SVG): lightbulb, gears, chart-up, brain, target, flag, users, process, globe, cloud, chip, robot, network, document, check, growth, coin, search.
 
 Reglas de contenido:
 - Español.
 - Poco texto: 1 idea por slide. Headlines cortos.
-- Estructura típica: hook → 2–4 slides de valor → cta.
-- Usa plantillas disponibles; no inventes templates.
-- ab-compare: values 0–100.
-- steps: 2 o 3 pasos.
-- phone-mock: 1–4 screenLines.
+- Estructura típica: hook → 2–4 slides de valor (prioriza vs-split / ribbon-steps / icon-bento / icon-rows) → cta.
+- Usa solo plantillas del catálogo; no inventes templates ni icon ids.
 - Nada de relleno corporativo ni párrafos largos.
 - Visual-first: el copy debe dejar aire en el layout.`;
 
@@ -44,20 +55,27 @@ function demoCarousel(brief: string): CarouselContent {
         },
       },
       {
-        template: "ab-compare",
+        template: "vs-split",
         data: {
-          headline: "Antes vs con sistema",
-          left: { label: "Antes", value: 65, caption: "Caos" },
-          right: { label: "Ahora", value: 22, caption: "Flujo" },
-          footer: "Menos fricción, más foco",
+          headline: "Antes vs sistema",
+          leftLabel: "Antes",
+          rightLabel: "Ahora",
+          rows: [
+            { topic: "Idea", left: "Se pierde", right: "Brief claro", icon: "lightbulb" },
+            { topic: "Proceso", left: "Improvisado", right: "Plantilla", icon: "process" },
+            { topic: "Ritmo", left: "Lento", right: "Iterativo", icon: "growth" },
+          ],
         },
       },
       {
-        template: "stat-hero",
+        template: "ribbon-steps",
         data: {
-          value: "3x",
-          headline: "Más claridad en el mensaje",
-          detail: "Cuando el formato ya no compite con el contenido.",
+          headline: "Cómo lo armamos",
+          steps: [
+            { title: "Brief", detail: "Una idea", icon: "document" },
+            { title: "Layout", detail: "Plantilla fija", icon: "gears" },
+            { title: "Export", detail: "PDF LinkedIn", icon: "flag" },
+          ],
         },
       },
       {
@@ -66,6 +84,7 @@ function demoCarousel(brief: string): CarouselContent {
           headline: "¿Cuál es tu mayor fricción hoy?",
           prompt: "Escríbela abajo",
           cta: "Guarda y comparte",
+          icon: "network",
         },
       },
     ],
