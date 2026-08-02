@@ -32,8 +32,16 @@ function slotStyle(layout?: SlotLayout): CSSProperties {
     style["--slot-fs"] = `${layout.fontSize}px`;
     style.fontSize = layout.fontSize;
   }
-  if (layout?.bold !== undefined) style.fontWeight = layout.bold ? 700 : 500;
-  if (layout?.italic !== undefined) style.fontStyle = layout.italic ? "italic" : "normal";
+  // Override tipografía del hijo (.slot-text); fontWeight en el wrapper no basta
+  // porque las plantillas usan font-bold / font-extrabold en el nodo de texto.
+  if (layout?.bold !== undefined) {
+    style["--slot-fw"] = layout.bold ? 700 : 500;
+    // Iconos: bold → stroke más grueso / false → más fino (SlideIcon lee --slide-icon-stroke).
+    style["--slide-icon-stroke"] = layout.bold ? 2.75 : 1.35;
+  }
+  if (layout?.italic !== undefined) {
+    style["--slot-fi"] = layout.italic ? "italic" : "normal";
+  }
   return style;
 }
 
@@ -117,15 +125,21 @@ export function LayoutSlot({ id, layout, children, className = "" }: Props) {
     dragRef.current = null;
   }
 
-  const textOverride = layout?.fontSize !== undefined || layout?.bold !== undefined || layout?.italic !== undefined;
-
   return (
     <div
       ref={ref}
       data-slot={id}
       className={[
         className,
-        textOverride ? "slot-text-override [&_.slot-text]:!text-[length:var(--slot-fs,inherit)]" : "",
+        layout?.fontSize !== undefined
+          ? "[&_.slot-text]:!text-[length:var(--slot-fs,inherit)]"
+          : "",
+        layout?.bold !== undefined
+          ? "[&_.slot-text]:![font-weight:var(--slot-fw)]"
+          : "",
+        layout?.italic !== undefined
+          ? "[&_.slot-text]:![font-style:var(--slot-fi)]"
+          : "",
         edit?.editMode ? "cursor-move" : "",
         selected ? "outline outline-2 outline-[var(--accent)] outline-offset-2" : "",
       ]

@@ -4,6 +4,7 @@ import {
   clearLayout,
   clearSlot,
   getSlot,
+  isIconSlot,
   isTextSlot,
   replaceSlot,
   slotsForTemplate,
@@ -66,6 +67,8 @@ export function LayoutPanel({ slide, selectedSlot, onSelectSlot, onChange }: Pro
   const active = selectedSlot && slots.includes(selectedSlot) ? selectedSlot : (slots[0] ?? null);
   const current = active ? getSlot(slide.layout, active) : undefined;
   const textCapable = active ? isTextSlot(active) : false;
+  const iconCapable = active ? isIconSlot(active) : false;
+  const weightCapable = textCapable || iconCapable;
 
   function writeField<K extends keyof SlotLayout>(key: K, value: SlotLayout[K] | undefined) {
     if (!active) return;
@@ -74,6 +77,15 @@ export function LayoutPanel({ slide, selectedSlot, onSelectSlot, onChange }: Pro
       ...slide,
       layout: replaceSlot(slide.layout, active, nextSlot),
     } as SlideContent);
+  }
+
+  /** Primer clic desde default (undefined) quita peso: tipografías e iconos ya vienen pesados. */
+  function toggleBold() {
+    if (current?.bold === undefined) {
+      writeField("bold", false);
+      return;
+    }
+    writeField("bold", !current.bold);
   }
 
   return (
@@ -103,24 +115,35 @@ export function LayoutPanel({ slide, selectedSlot, onSelectSlot, onChange }: Pro
           </div>
 
           {textCapable ? (
-            <>
-              <NumField
-                label="Tamaño texto"
-                value={current?.fontSize ?? ""}
-                onChange={(v) => writeField("fontSize", v)}
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => writeField("bold", !current?.bold)}
-                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold ${
-                    current?.bold
-                      ? "bg-[var(--accent)] text-[#0b1015]"
+            <NumField
+              label="Tamaño texto"
+              value={current?.fontSize ?? ""}
+              onChange={(v) => writeField("fontSize", v)}
+            />
+          ) : null}
+
+          {weightCapable ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={toggleBold}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold ${
+                  current?.bold === true
+                    ? "bg-[var(--accent)] text-[#0b1015]"
+                    : current?.bold === false
+                      ? "bg-white/10 text-[var(--muted)] ring-1 ring-[var(--panel-border)]"
                       : "bg-white/10 text-[var(--muted)]"
-                  }`}
-                >
-                  Negrita
-                </button>
+                }`}
+                title={
+                  iconCapable
+                    ? "Grosor del trazo del icono (off = fino, on = grueso)"
+                    : "Peso tipográfico (off = normal, on = negrita)"
+                }
+              >
+                {iconCapable ? "Grosor" : "Negrita"}
+                {current?.bold === false ? " · fino" : current?.bold === true ? " · grueso" : ""}
+              </button>
+              {textCapable ? (
                 <button
                   type="button"
                   onClick={() => writeField("italic", !current?.italic)}
@@ -132,8 +155,8 @@ export function LayoutPanel({ slide, selectedSlot, onSelectSlot, onChange }: Pro
                 >
                   Cursiva
                 </button>
-              </div>
-            </>
+              ) : null}
+            </div>
           ) : null}
 
           <div className="flex gap-2">

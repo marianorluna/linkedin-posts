@@ -1,6 +1,6 @@
 import { SLIDE_SIZE } from "@/lib/design-tokens";
 import type { SlotLayout } from "@/lib/schemas/layout";
-import { TEMPLATE_SLOTS, TEXT_SLOTS } from "@/lib/schemas/layout";
+import { ICON_SLOTS, TEMPLATE_SLOTS, TEXT_SLOTS } from "@/lib/schemas/layout";
 import type { SlideContent, TemplateSlug } from "@/lib/schemas/carousel";
 
 export function clampCoord(value: number): number {
@@ -79,6 +79,10 @@ export function slotsForTemplate(template: TemplateSlug): readonly string[] {
 
 export function isTextSlot(id: string): boolean {
   return TEXT_SLOTS.has(id);
+}
+
+export function isIconSlot(id: string): boolean {
+  return ICON_SLOTS.has(id);
 }
 
 export function hasPosition(layout?: SlotLayout): boolean {

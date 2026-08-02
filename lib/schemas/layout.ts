@@ -47,6 +47,9 @@ export const TEXT_SLOTS = new Set([
   "rightLabel",
 ]);
 
+/** Slots donde `bold` controla el stroke del SVG (no tipografía). */
+export const ICON_SLOTS = new Set(["icon"]);
+
 export function layoutSchemaForSlots(slots: readonly string[]) {
   const shape: Record<string, typeof slotLayoutSchema> = {};
   for (const slot of slots) {
