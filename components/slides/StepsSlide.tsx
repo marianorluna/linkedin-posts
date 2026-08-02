@@ -1,4 +1,5 @@
 import type { BrandTokens } from "@/lib/design-tokens";
+import { listDensity } from "@/lib/domain/repeatable-items";
 import type { SlideContent } from "@/lib/schemas/carousel";
 import { getSlot } from "@/lib/domain/layout";
 import { SlideIcon } from "@/components/icons/SlideIcon";
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function StepsSlide({ tokens, data, layout }: Props) {
+  const dens = listDensity(data.steps.length);
   return (
     <SlideFrame tokens={tokens}>
       <SlideEyebrow>Proceso</SlideEyebrow>
@@ -21,26 +23,32 @@ export function StepsSlide({ tokens, data, layout }: Props) {
       <LayoutSlot
         id="list"
         layout={getSlot(layout, "list")}
-        className="mt-16 flex flex-1 flex-col justify-center"
+        className="flex flex-1 flex-col justify-center"
+        style={{ marginTop: dens.mtPx }}
       >
-        <ol className="flex flex-col gap-10">
+        <ol className="flex flex-col" style={{ gap: dens.gapPx }}>
           {data.steps.map((step, index) => (
             <li key={`${step.title}-${index}`} className="flex items-start gap-7">
               {step.icon ? (
                 <span
-                  className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full"
+                  className="flex shrink-0 items-center justify-center rounded-full"
                   style={{
+                    height: dens.badgePx,
+                    width: dens.badgePx,
                     border: "var(--slide-stroke-width) solid var(--slide-stroke)",
                     color: "var(--slide-accent)",
                     background: "var(--slide-accent-soft)",
                   }}
                 >
-                  <SlideIcon id={step.icon} size={30} />
+                  <SlideIcon id={step.icon} size={Math.round(dens.iconPx * 0.7)} />
                 </span>
               ) : (
                 <span
-                  className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full font-[family-name:var(--slide-font-mono)] text-[26px]"
+                  className="flex shrink-0 items-center justify-center rounded-full font-[family-name:var(--slide-font-mono)]"
                   style={{
+                    height: dens.badgePx,
+                    width: dens.badgePx,
+                    fontSize: Math.round(dens.titlePx * 0.65),
                     border: "var(--slide-stroke-width) solid var(--slide-stroke)",
                     color: "var(--slide-accent)",
                     background: "var(--slide-accent-soft)",
@@ -51,15 +59,15 @@ export function StepsSlide({ tokens, data, layout }: Props) {
               )}
               <div>
                 <p
-                  className="slot-text font-[family-name:var(--slide-font-display)] text-[40px] tracking-tight"
-                  style={{ color: "var(--slide-ink)" }}
+                  className="slot-text font-[family-name:var(--slide-font-display)] tracking-tight"
+                  style={{ color: "var(--slide-ink)", fontSize: dens.titlePx }}
                 >
                   {step.title}
                 </p>
                 {step.detail ? (
                   <p
-                    className="slot-text mt-2 font-[family-name:var(--slide-font-body)] text-[24px]"
-                    style={{ color: "var(--slide-ink-muted)" }}
+                    className="slot-text mt-2 font-[family-name:var(--slide-font-body)]"
+                    style={{ color: "var(--slide-ink-muted)", fontSize: dens.detailPx }}
                   >
                     {step.detail}
                   </p>

@@ -62,6 +62,7 @@ No uses Midjourney/DALL·E para el layout. El layout vive en `components/slides/
 - Tipografías: `syne-instrument` | `space-grotesk` | `dm-sans` | `outfit` | `bricolage-plex` | `plex`.
 - Densidad: `air` | `compact` | `tight`.
 - Iconos: solo IDs del catálogo SVG (no emojis).
+- En listas con color (`ribbon-steps`, `icon-rows`, `icon-bento`): `tone` opcional por ítem (`accent` | `accentAlt` | `highlight` | `surface`) del BrandKit; sin `tone` = rotación automática. En `vs-split`: `leftTone` / `rightTone` opcionales (default accent / accentAlt).
 - Editar estilo en BrandKit; variedad por tema vía EpisodeVisual + variants + preset (no inventar paletas sueltas por post).
 
 ## Flujo habitual
@@ -71,6 +72,7 @@ No uses Midjourney/DALL·E para el layout. El layout vive en `components/slides/
 3. Ajustar BrandKit (preset / colores / mood) en el StylePanel.
 4. Ajustar Episodio (`visual`) y variantes por slide.
 5. Opcional: **Editar layout** — mover/redimensionar slots (x,y,w,h) y tipografía (fontSize, bold, italic).
+   En listas (`steps`, `ribbon-steps`, `icon-rows`, `icon-bento`, `vs-split`): añadir / quitar / reordenar ítems; el preview densifica según N.
 6. Guardar versión (`Post` + `PostVersion`).
 7. Export PDF: `/api/export` (Playwright + pdf-lib). Requiere `pnpm dev` en `NEXT_PUBLIC_APP_URL`.
 8. Subir el PDF a LinkedIn como documento.

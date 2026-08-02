@@ -1,6 +1,9 @@
 import type { BrandTokens } from "@/lib/design-tokens";
+import { listDensity } from "@/lib/domain/repeatable-items";
+import { resolveItemTone } from "@/lib/domain/item-tone";
 import type { SlideContent } from "@/lib/schemas/carousel";
 import type { VariantsFor } from "@/lib/schemas/variants";
+import { ITEM_TONE_CYCLES } from "@/lib/schemas/item-tone";
 import { getSlot } from "@/lib/domain/layout";
 import { SlideIcon } from "@/components/icons/SlideIcon";
 import { NumberBadge } from "./primitives";
@@ -14,14 +17,8 @@ type Props = {
   variant?: VariantsFor<"ribbon-steps">;
 };
 
-const tones = [
-  "var(--slide-accent)",
-  "var(--slide-highlight)",
-  "var(--slide-accent-alt)",
-  "var(--slide-surface)",
-] as const;
-
 function RibbonDiagonal({ data, layout }: Omit<Props, "tokens" | "variant">) {
+  const dens = listDensity(data.steps.length);
   return (
     <>
       <p
@@ -32,8 +29,11 @@ function RibbonDiagonal({ data, layout }: Omit<Props, "tokens" | "variant">) {
       </p>
       <LayoutSlot id="headline" layout={getSlot(layout, "headline")}>
         <h1
-          className="slot-text font-[family-name:var(--slide-font-display)] text-[52px] font-extrabold tracking-tight"
-          style={{ color: "var(--slide-ink)" }}
+          className="slot-text font-[family-name:var(--slide-font-display)] font-extrabold tracking-tight"
+          style={{
+            color: "var(--slide-ink)",
+            fontSize: data.steps.length >= 7 ? 36 : data.steps.length >= 5 ? 44 : 52,
+          }}
         >
           {data.headline}
         </h1>
@@ -42,32 +42,39 @@ function RibbonDiagonal({ data, layout }: Omit<Props, "tokens" | "variant">) {
       <LayoutSlot
         id="steps"
         layout={getSlot(layout, "steps")}
-        className="mt-12 flex flex-1 flex-col justify-center gap-5"
+        className="flex flex-1 flex-col justify-center"
+        style={{ marginTop: dens.mtPx, gap: dens.gapPx }}
       >
         {data.steps.map((step, index) => {
-          const tone = tones[index % tones.length];
-          const darkText = tone === "var(--slide-surface)";
+          const { cssVar, inkOnTone } = resolveItemTone(step.tone, index, ITEM_TONE_CYCLES.ribbon);
+          const darkText = inkOnTone === "ink";
           return (
             <div
               key={`${step.title}-${index}`}
-              className="relative flex items-center gap-5 rounded-[999px] py-4 pl-4 pr-8 shadow-[0_12px_0_rgba(0,0,0,0.08)]"
+              className="relative flex items-center gap-5 rounded-[999px] pl-4 pr-8 shadow-[0_12px_0_rgba(0,0,0,0.08)]"
               style={{
-                background: tone,
-                transform: `translateX(${index % 2 === 0 ? 0 : 24}px)`,
+                background: cssVar,
+                paddingTop: dens.padYPx,
+                paddingBottom: dens.padYPx,
+                transform: `translateX(${index % 2 === 0 ? 0 : Math.max(8, 24 - data.steps.length)}px)`,
               }}
             >
-              <NumberBadge n={index + 1} size={72} tone="surface" />
+              <NumberBadge n={index + 1} size={dens.badgePx} tone="surface" />
               <div className="min-w-0 flex-1">
                 <p
-                  className="slot-text truncate font-[family-name:var(--slide-font-display)] text-[32px] font-extrabold uppercase tracking-wide"
-                  style={{ color: darkText ? "var(--slide-ink)" : "var(--slide-bg)" }}
+                  className="slot-text truncate font-[family-name:var(--slide-font-display)] font-extrabold uppercase tracking-wide"
+                  style={{
+                    color: darkText ? "var(--slide-ink)" : "var(--slide-bg)",
+                    fontSize: dens.titlePx,
+                  }}
                 >
                   {step.title}
                 </p>
                 {step.detail ? (
                   <p
-                    className="slot-text mt-0.5 font-[family-name:var(--slide-font-body)] text-[22px]"
+                    className="slot-text mt-0.5 font-[family-name:var(--slide-font-body)]"
                     style={{
+                      fontSize: dens.detailPx,
                       color: darkText
                         ? "var(--slide-ink-muted)"
                         : "color-mix(in srgb, var(--slide-bg) 88%, transparent)",
@@ -79,7 +86,7 @@ function RibbonDiagonal({ data, layout }: Omit<Props, "tokens" | "variant">) {
               </div>
               {step.icon ? (
                 <span style={{ color: darkText ? "var(--slide-ink)" : "var(--slide-bg)" }}>
-                  <SlideIcon id={step.icon} size={44} />
+                  <SlideIcon id={step.icon} size={dens.iconPx} />
                 </span>
               ) : null}
             </div>
@@ -91,6 +98,7 @@ function RibbonDiagonal({ data, layout }: Omit<Props, "tokens" | "variant">) {
 }
 
 function RibbonNumberedRail({ data, layout }: Omit<Props, "tokens" | "variant">) {
+  const dens = listDensity(data.steps.length);
   return (
     <>
       <p
@@ -101,8 +109,11 @@ function RibbonNumberedRail({ data, layout }: Omit<Props, "tokens" | "variant">)
       </p>
       <LayoutSlot id="headline" layout={getSlot(layout, "headline")}>
         <h1
-          className="slot-text font-[family-name:var(--slide-font-display)] text-[52px] font-extrabold tracking-tight"
-          style={{ color: "var(--slide-ink)" }}
+          className="slot-text font-[family-name:var(--slide-font-display)] font-extrabold tracking-tight"
+          style={{
+            color: "var(--slide-ink)",
+            fontSize: data.steps.length >= 7 ? 36 : data.steps.length >= 5 ? 44 : 52,
+          }}
         >
           {data.headline}
         </h1>
@@ -111,7 +122,8 @@ function RibbonNumberedRail({ data, layout }: Omit<Props, "tokens" | "variant">)
       <LayoutSlot
         id="steps"
         layout={getSlot(layout, "steps")}
-        className="mt-10 flex flex-1 gap-6"
+        className="flex flex-1 gap-6"
+        style={{ marginTop: dens.mtPx }}
       >
         <div className="relative flex w-16 flex-col items-center py-2">
           <div
@@ -120,31 +132,36 @@ function RibbonNumberedRail({ data, layout }: Omit<Props, "tokens" | "variant">)
           />
           {data.steps.map((_, index) => (
             <div key={`rail-${index}`} className="relative z-10 flex flex-1 items-center">
-              <NumberBadge n={index + 1} size={56} tone="accent" />
+              <NumberBadge n={index + 1} size={Math.round(dens.badgePx * 0.82)} tone="accent" />
             </div>
           ))}
         </div>
 
-        <div className="flex flex-1 flex-col justify-evenly gap-4">
+        <div className="flex flex-1 flex-col justify-evenly" style={{ gap: dens.gapPx }}>
           {data.steps.map((step, index) => {
-            const tone = tones[index % tones.length];
+            const { cssVar } = resolveItemTone(step.tone, index, ITEM_TONE_CYCLES.ribbon);
             return (
               <div
                 key={`${step.title}-${index}`}
-                className="flex items-center gap-5 rounded-[24px] px-6 py-5 shadow-[0_10px_0_rgba(0,0,0,0.06)]"
-                style={{ background: "var(--slide-bg-elevated)", borderLeft: `8px solid ${tone}` }}
+                className="flex items-center gap-5 rounded-[24px] px-6 shadow-[0_10px_0_rgba(0,0,0,0.06)]"
+                style={{
+                  background: "var(--slide-bg-elevated)",
+                  borderLeft: `8px solid ${cssVar}`,
+                  paddingTop: dens.padYPx + 4,
+                  paddingBottom: dens.padYPx + 4,
+                }}
               >
                 <div className="min-w-0 flex-1">
                   <p
-                    className="slot-text font-[family-name:var(--slide-font-display)] text-[30px] font-extrabold tracking-tight"
-                    style={{ color: "var(--slide-ink)" }}
+                    className="slot-text font-[family-name:var(--slide-font-display)] font-extrabold tracking-tight"
+                    style={{ color: "var(--slide-ink)", fontSize: dens.titlePx }}
                   >
                     {step.title}
                   </p>
                   {step.detail ? (
                     <p
-                      className="slot-text mt-1 font-[family-name:var(--slide-font-body)] text-[22px]"
-                      style={{ color: "var(--slide-ink-muted)" }}
+                      className="slot-text mt-1 font-[family-name:var(--slide-font-body)]"
+                      style={{ color: "var(--slide-ink-muted)", fontSize: dens.detailPx }}
                     >
                       {step.detail}
                     </p>
@@ -152,7 +169,7 @@ function RibbonNumberedRail({ data, layout }: Omit<Props, "tokens" | "variant">)
                 </div>
                 {step.icon ? (
                   <span style={{ color: "var(--slide-ink)" }}>
-                    <SlideIcon id={step.icon} size={40} />
+                    <SlideIcon id={step.icon} size={dens.iconPx} />
                   </span>
                 ) : null}
               </div>

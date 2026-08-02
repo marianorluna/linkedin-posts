@@ -35,13 +35,13 @@ Plantillas y cuándo usarlas:
 - hook: portada (eyebrow, headline, subline, icon opcional).
 - ab-compare: dos % 0–100 (antes/después).
 - stat-hero: un número grande + frase.
-- steps: 2–3 pasos (icon opcional por paso).
-- phone-mock: maqueta móvil, 1–4 screenLines.
+- steps: 2–5 pasos (icon opcional por paso).
+- phone-mock: maqueta móvil, 1–6 screenLines.
 - cta: cierre con pregunta/CTA (icon opcional).
-- vs-split: comparativa A/B por filas con icono central (2–4 rows: topic, left, right, icon).
-- ribbon-steps: 3–4 banners numerados (title, detail, icon).
-- icon-rows: 2–4 filas con icono obligatorio.
-- icon-bento: 3–6 celdas (label, detail, icon).
+- vs-split: comparativa A/B por filas con icono central (2–5 rows: topic, left, right, icon; leftTone/rightTone opcionales del BrandKit).
+- ribbon-steps: 2–10 banners numerados (title, detail, icon, tone opcional: accent|accentAlt|highlight|surface).
+- icon-rows: 2–5 filas con icono obligatorio (tone opcional del BrandKit).
+- icon-bento: 2–10 celdas en grid 2 cols (≥4) fila a fila (label, detail, icon, tone opcional).
 
 Variantes permitidas por plantilla (elige una; si omites, se usa la primera):
 ${VARIANTS_DOC}

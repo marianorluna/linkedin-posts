@@ -17,15 +17,22 @@ import { IconPicker } from "@/components/studio/IconPicker";
 import { LayoutOverlay } from "@/components/studio/LayoutOverlay";
 import { LayoutPanel } from "@/components/studio/LayoutPanel";
 import { EpisodePanel } from "@/components/studio/EpisodePanel";
+import {
+  AddRepeatableItemButton,
+  RepeatableItemShell,
+} from "@/components/studio/RepeatableItemsEditor";
+import { ItemTonePicker } from "@/components/studio/ItemTonePicker";
 import { StylePanel, type BrandKitOption } from "@/components/studio/StylePanel";
 import { resolveEpisodeTokens } from "@/lib/domain/episode-visual";
 import { rectToSlideCoords, setSlot, slotsForTemplate } from "@/lib/domain/layout";
+import { moveItem, removeItemAt, REPEATABLE_LIMITS } from "@/lib/domain/repeatable-items";
 import type { BrandTokens } from "@/lib/design-tokens";
 import { BRAND_PRESETS, SLIDE_SIZE, deepMergeBrandTokens } from "@/lib/design-tokens";
 import type { IconId } from "@/lib/icons/registry";
 import type { SlotLayout } from "@/lib/schemas/layout";
 import type { CarouselContent, SlideContent, TemplateSlug } from "@/lib/schemas/carousel";
 import { TEMPLATE_SLUGS } from "@/lib/schemas/carousel";
+import { ITEM_TONE_CYCLES } from "@/lib/schemas/item-tone";
 import { defaultVariant, variantsFor } from "@/lib/schemas/variants";
 
 const ZOOM_MIN = 0.5;
@@ -773,6 +780,7 @@ export function StudioEditor({
               <CollapsibleSection title={`Slide: ${activeSlide.template}`}>
                 <SlideFields
                   slide={activeSlide}
+                  tokens={tokens}
                   onChange={(slide) => updateSlide(activeIndex, slide)}
                 />
               </CollapsibleSection>
@@ -840,12 +848,15 @@ function VariantField({
 
 function SlideFields({
   slide,
+  tokens,
   onChange,
 }: {
   slide: SlideContent;
+  tokens: BrandTokens;
   onChange: (slide: SlideContent) => void;
 }) {
   const variantControl = <VariantField slide={slide} onChange={onChange} />;
+  const colors = tokens.colors;
 
   switch (slide.template) {
     case "hook":
@@ -957,7 +968,8 @@ function SlideFields({
           />
         </div>
       );
-    case "steps":
+    case "steps": {
+      const limits = REPEATABLE_LIMITS.steps;
       return (
         <div className="space-y-3">
           {variantControl}
@@ -967,9 +979,27 @@ function SlideFields({
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, headline: v } })}
           />
           {slide.data.steps.map((step, i) => (
-            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+            <RepeatableItemShell
+              key={i}
+              label={`Paso ${i + 1}`}
+              index={i}
+              total={slide.data.steps.length}
+              min={limits.min}
+              onMove={(delta) =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, steps: moveItem(slide.data.steps, i, delta) },
+                })
+              }
+              onRemove={() =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, steps: removeItemAt(slide.data.steps, i) },
+                })
+              }
+            >
               <Field
-                label={`Paso ${i + 1} título`}
+                label="Título"
                 value={step.title}
                 onChange={(v) => {
                   const steps = slide.data.steps.map((s, idx) =>
@@ -979,7 +1009,7 @@ function SlideFields({
                 }}
               />
               <Field
-                label={`Paso ${i + 1} detail`}
+                label="Detail"
                 value={step.detail ?? ""}
                 onChange={(v) => {
                   const steps = slide.data.steps.map((s, idx) =>
@@ -989,7 +1019,7 @@ function SlideFields({
                 }}
               />
               <IconPicker
-                label={`Paso ${i + 1} icono`}
+                label="Icono"
                 value={step.icon}
                 onChange={(icon) => {
                   const steps = slide.data.steps.map((s, idx) =>
@@ -998,10 +1028,28 @@ function SlideFields({
                   onChange({ ...slide, data: { ...slide.data, steps } });
                 }}
               />
-            </div>
+            </RepeatableItemShell>
           ))}
+          <AddRepeatableItemButton
+            label="Añadir paso"
+            count={slide.data.steps.length}
+            max={limits.max}
+            onAdd={() =>
+              onChange({
+                ...slide,
+                data: {
+                  ...slide.data,
+                  steps: [
+                    ...slide.data.steps,
+                    { title: "Nuevo paso", detail: "", icon: "check" as IconId },
+                  ],
+                },
+              })
+            }
+          />
         </div>
       );
+    }
     case "phone-mock":
       return (
         <div className="space-y-3">
@@ -1032,7 +1080,8 @@ function SlideFields({
                   screenLines: v
                     .split("|")
                     .map((s) => s.trim())
-                    .filter(Boolean),
+                    .filter(Boolean)
+                    .slice(0, REPEATABLE_LIMITS["phone-mock"].max),
                 },
               })
             }
@@ -1064,7 +1113,8 @@ function SlideFields({
           />
         </div>
       );
-    case "vs-split":
+    case "vs-split": {
+      const limits = REPEATABLE_LIMITS["vs-split"];
       return (
         <div className="space-y-3">
           {variantControl}
@@ -1078,15 +1128,47 @@ function SlideFields({
             value={slide.data.leftLabel}
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, leftLabel: v } })}
           />
+          <ItemTonePicker
+            label="Tono columna izq."
+            value={slide.data.leftTone}
+            fallbackTone="accent"
+            colors={colors}
+            onChange={(leftTone) => onChange({ ...slide, data: { ...slide.data, leftTone } })}
+          />
           <Field
             label="Label der."
             value={slide.data.rightLabel}
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, rightLabel: v } })}
           />
+          <ItemTonePicker
+            label="Tono columna der."
+            value={slide.data.rightTone}
+            fallbackTone="accentAlt"
+            colors={colors}
+            onChange={(rightTone) => onChange({ ...slide, data: { ...slide.data, rightTone } })}
+          />
           {slide.data.rows.map((row, i) => (
-            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+            <RepeatableItemShell
+              key={i}
+              label={`Fila ${i + 1}`}
+              index={i}
+              total={slide.data.rows.length}
+              min={limits.min}
+              onMove={(delta) =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, rows: moveItem(slide.data.rows, i, delta) },
+                })
+              }
+              onRemove={() =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, rows: removeItemAt(slide.data.rows, i) },
+                })
+              }
+            >
               <Field
-                label={`Fila ${i + 1} topic`}
+                label="Topic"
                 value={row.topic}
                 onChange={(v) => {
                   const rows = slide.data.rows.map((r, idx) =>
@@ -1126,11 +1208,30 @@ function SlideFields({
                   onChange({ ...slide, data: { ...slide.data, rows } });
                 }}
               />
-            </div>
+            </RepeatableItemShell>
           ))}
+          <AddRepeatableItemButton
+            label="Añadir fila"
+            count={slide.data.rows.length}
+            max={limits.max}
+            onAdd={() =>
+              onChange({
+                ...slide,
+                data: {
+                  ...slide.data,
+                  rows: [
+                    ...slide.data.rows,
+                    { topic: "Tema", left: "Antes", right: "Ahora", icon: "check" as IconId },
+                  ],
+                },
+              })
+            }
+          />
         </div>
       );
-    case "ribbon-steps":
+    }
+    case "ribbon-steps": {
+      const limits = REPEATABLE_LIMITS["ribbon-steps"];
       return (
         <div className="space-y-3">
           {variantControl}
@@ -1140,9 +1241,27 @@ function SlideFields({
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, headline: v } })}
           />
           {slide.data.steps.map((step, i) => (
-            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+            <RepeatableItemShell
+              key={i}
+              label={`Paso ${i + 1}`}
+              index={i}
+              total={slide.data.steps.length}
+              min={limits.min}
+              onMove={(delta) =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, steps: moveItem(slide.data.steps, i, delta) },
+                })
+              }
+              onRemove={() =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, steps: removeItemAt(slide.data.steps, i) },
+                })
+              }
+            >
               <Field
-                label={`Paso ${i + 1}`}
+                label="Título"
                 value={step.title}
                 onChange={(v) => {
                   const steps = slide.data.steps.map((s, idx) =>
@@ -1170,11 +1289,41 @@ function SlideFields({
                   onChange({ ...slide, data: { ...slide.data, steps } });
                 }}
               />
-            </div>
+              <ItemTonePicker
+                value={step.tone}
+                fallbackTone={ITEM_TONE_CYCLES.ribbon[i % ITEM_TONE_CYCLES.ribbon.length]!}
+                colors={colors}
+                onChange={(tone) => {
+                  const steps = slide.data.steps.map((s, idx) =>
+                    idx === i ? { ...s, tone } : s,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, steps } });
+                }}
+              />
+            </RepeatableItemShell>
           ))}
+          <AddRepeatableItemButton
+            label="Añadir paso"
+            count={slide.data.steps.length}
+            max={limits.max}
+            onAdd={() =>
+              onChange({
+                ...slide,
+                data: {
+                  ...slide.data,
+                  steps: [
+                    ...slide.data.steps,
+                    { title: "Nuevo", detail: "", icon: "flag" as IconId },
+                  ],
+                },
+              })
+            }
+          />
         </div>
       );
-    case "icon-rows":
+    }
+    case "icon-rows": {
+      const limits = REPEATABLE_LIMITS["icon-rows"];
       return (
         <div className="space-y-3">
           {variantControl}
@@ -1184,9 +1333,27 @@ function SlideFields({
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, headline: v } })}
           />
           {slide.data.rows.map((row, i) => (
-            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+            <RepeatableItemShell
+              key={i}
+              label={`Fila ${i + 1}`}
+              index={i}
+              total={slide.data.rows.length}
+              min={limits.min}
+              onMove={(delta) =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, rows: moveItem(slide.data.rows, i, delta) },
+                })
+              }
+              onRemove={() =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, rows: removeItemAt(slide.data.rows, i) },
+                })
+              }
+            >
               <Field
-                label={`Fila ${i + 1}`}
+                label="Título"
                 value={row.title}
                 onChange={(v) => {
                   const rows = slide.data.rows.map((r, idx) =>
@@ -1216,11 +1383,41 @@ function SlideFields({
                   onChange({ ...slide, data: { ...slide.data, rows } });
                 }}
               />
-            </div>
+              <ItemTonePicker
+                value={row.tone}
+                fallbackTone={ITEM_TONE_CYCLES.rows[i % ITEM_TONE_CYCLES.rows.length]!}
+                colors={colors}
+                onChange={(tone) => {
+                  const rows = slide.data.rows.map((r, idx) =>
+                    idx === i ? { ...r, tone } : r,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, rows } });
+                }}
+              />
+            </RepeatableItemShell>
           ))}
+          <AddRepeatableItemButton
+            label="Añadir fila"
+            count={slide.data.rows.length}
+            max={limits.max}
+            onAdd={() =>
+              onChange({
+                ...slide,
+                data: {
+                  ...slide.data,
+                  rows: [
+                    ...slide.data.rows,
+                    { title: "Nueva", detail: "", icon: "check" as IconId },
+                  ],
+                },
+              })
+            }
+          />
         </div>
       );
-    case "icon-bento":
+    }
+    case "icon-bento": {
+      const limits = REPEATABLE_LIMITS["icon-bento"];
       return (
         <div className="space-y-3">
           {variantControl}
@@ -1235,9 +1432,27 @@ function SlideFields({
             onChange={(v) => onChange({ ...slide, data: { ...slide.data, subline: v } })}
           />
           {slide.data.cells.map((cell, i) => (
-            <div key={i} className="space-y-2 rounded-lg bg-white/5 p-2">
+            <RepeatableItemShell
+              key={i}
+              label={`Celda ${i + 1}`}
+              index={i}
+              total={slide.data.cells.length}
+              min={limits.min}
+              onMove={(delta) =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, cells: moveItem(slide.data.cells, i, delta) },
+                })
+              }
+              onRemove={() =>
+                onChange({
+                  ...slide,
+                  data: { ...slide.data, cells: removeItemAt(slide.data.cells, i) },
+                })
+              }
+            >
               <Field
-                label={`Celda ${i + 1}`}
+                label="Label"
                 value={cell.label}
                 onChange={(v) => {
                   const cells = slide.data.cells.map((c, idx) =>
@@ -1267,10 +1482,39 @@ function SlideFields({
                   onChange({ ...slide, data: { ...slide.data, cells } });
                 }}
               />
-            </div>
+              <ItemTonePicker
+                value={cell.tone}
+                fallbackTone={ITEM_TONE_CYCLES.bento[i % ITEM_TONE_CYCLES.bento.length]!}
+                colors={colors}
+                onChange={(tone) => {
+                  const cells = slide.data.cells.map((c, idx) =>
+                    idx === i ? { ...c, tone } : c,
+                  );
+                  onChange({ ...slide, data: { ...slide.data, cells } });
+                }}
+              />
+            </RepeatableItemShell>
           ))}
+          <AddRepeatableItemButton
+            label="Añadir celda"
+            count={slide.data.cells.length}
+            max={limits.max}
+            onAdd={() =>
+              onChange({
+                ...slide,
+                data: {
+                  ...slide.data,
+                  cells: [
+                    ...slide.data.cells,
+                    { label: "Nueva", detail: "", icon: "check" as IconId },
+                  ],
+                },
+              })
+            }
+          />
         </div>
       );
+    }
     default: {
       const _exhaustive: never = slide;
       return _exhaustive;

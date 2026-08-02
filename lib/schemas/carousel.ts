@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { REPEATABLE_LIMITS } from "@/lib/domain/repeatable-items";
 import { ICON_IDS } from "@/lib/icons/registry";
 import { episodeVisualSchema } from "@/lib/schemas/episode-visual";
+import { itemToneSchema } from "@/lib/schemas/item-tone";
 import { layoutSchemaForSlots, TEMPLATE_SLOTS } from "@/lib/schemas/layout";
 import { TEMPLATE_VARIANTS } from "@/lib/schemas/variants";
 
@@ -76,8 +78,8 @@ export const stepsSlideSchema = z.object({
           icon: optionalIcon,
         }),
       )
-      .min(2)
-      .max(3),
+      .min(REPEATABLE_LIMITS.steps.min)
+      .max(REPEATABLE_LIMITS.steps.max),
   }),
   layout: layoutSchemaForSlots(TEMPLATE_SLOTS.steps),
 });
@@ -89,7 +91,10 @@ export const phoneMockSlideSchema = z.object({
     headline: short(56),
     caption: optionalShort(80),
     screenTitle: short(28),
-    screenLines: z.array(short(40)).min(1).max(4),
+    screenLines: z
+      .array(short(40))
+      .min(REPEATABLE_LIMITS["phone-mock"].min)
+      .max(REPEATABLE_LIMITS["phone-mock"].max),
   }),
   layout: layoutSchemaForSlots(TEMPLATE_SLOTS["phone-mock"]),
 });
@@ -113,6 +118,8 @@ export const vsSplitSlideSchema = z.object({
     headline: short(48),
     leftLabel: short(20),
     rightLabel: short(20),
+    leftTone: itemToneSchema.optional(),
+    rightTone: itemToneSchema.optional(),
     rows: z
       .array(
         z.object({
@@ -122,8 +129,8 @@ export const vsSplitSlideSchema = z.object({
           icon: iconIdSchema,
         }),
       )
-      .min(2)
-      .max(4),
+      .min(REPEATABLE_LIMITS["vs-split"].min)
+      .max(REPEATABLE_LIMITS["vs-split"].max),
   }),
   layout: layoutSchemaForSlots(TEMPLATE_SLOTS["vs-split"]),
 });
@@ -139,10 +146,11 @@ export const ribbonStepsSlideSchema = z.object({
           title: short(28),
           detail: optionalShort(56),
           icon: optionalIcon,
+          tone: itemToneSchema.optional(),
         }),
       )
-      .min(3)
-      .max(4),
+      .min(REPEATABLE_LIMITS["ribbon-steps"].min)
+      .max(REPEATABLE_LIMITS["ribbon-steps"].max),
   }),
   layout: layoutSchemaForSlots(TEMPLATE_SLOTS["ribbon-steps"]),
 });
@@ -158,10 +166,11 @@ export const iconRowsSlideSchema = z.object({
           title: short(28),
           detail: optionalShort(56),
           icon: iconIdSchema,
+          tone: itemToneSchema.optional(),
         }),
       )
-      .min(2)
-      .max(4),
+      .min(REPEATABLE_LIMITS["icon-rows"].min)
+      .max(REPEATABLE_LIMITS["icon-rows"].max),
   }),
   layout: layoutSchemaForSlots(TEMPLATE_SLOTS["icon-rows"]),
 });
@@ -178,10 +187,11 @@ export const iconBentoSlideSchema = z.object({
           label: short(24),
           detail: optionalShort(48),
           icon: iconIdSchema,
+          tone: itemToneSchema.optional(),
         }),
       )
-      .min(3)
-      .max(6),
+      .min(REPEATABLE_LIMITS["icon-bento"].min)
+      .max(REPEATABLE_LIMITS["icon-bento"].max),
   }),
   layout: layoutSchemaForSlots(TEMPLATE_SLOTS["icon-bento"]),
 });

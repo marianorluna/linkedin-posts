@@ -16,6 +16,7 @@ type Props = {
   layout?: SlotLayout;
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 };
 
 function slotStyle(layout?: SlotLayout): CSSProperties {
@@ -45,7 +46,7 @@ function slotStyle(layout?: SlotLayout): CSSProperties {
   return style;
 }
 
-export function LayoutSlot({ id, layout, children, className = "" }: Props) {
+export function LayoutSlot({ id, layout, children, className = "", style }: Props) {
   const edit = useLayoutEdit();
   const ref = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
@@ -144,7 +145,7 @@ export function LayoutSlot({ id, layout, children, className = "" }: Props) {
       ]
         .filter(Boolean)
         .join(" ")}
-      style={slotStyle(layout)}
+      style={{ ...slotStyle(layout), ...style }}
       onPointerDown={(e) => {
         if (!edit?.editMode) return;
         if ((e.target as HTMLElement).dataset?.resizeHandle) return;
