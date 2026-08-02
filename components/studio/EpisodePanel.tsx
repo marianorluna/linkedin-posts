@@ -1,6 +1,6 @@
 "use client";
 
-import { DENSITIES, MOODS, type Density, type Mood } from "@/lib/design-tokens";
+import { DENSITIES, DENSITY_LABELS, MOODS, MOOD_LABELS, type Density, type Mood } from "@/lib/design-tokens";
 import {
   ACCENT_SHIFTS,
   CONTRASTS,
@@ -132,7 +132,7 @@ export function EpisodePanel({ visual, onChange }: Props) {
           <option value="">(BrandKit)</option>
           {MOODS.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {MOOD_LABELS[m]}
             </option>
           ))}
         </select>
@@ -157,7 +157,7 @@ export function EpisodePanel({ visual, onChange }: Props) {
           <option value="">(BrandKit)</option>
           {DENSITIES.map((d) => (
             <option key={d} value={d}>
-              {d}
+              {DENSITY_LABELS[d]}
             </option>
           ))}
         </select>

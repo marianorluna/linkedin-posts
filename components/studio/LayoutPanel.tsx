@@ -1,13 +1,17 @@
 "use client";
 
+import { useLayoutEffect, useState } from "react";
 import {
   clearLayout,
   clearSlot,
+  effectiveSlotBox,
   getSlot,
   isIconSlot,
   isTextSlot,
   replaceSlot,
+  seedGeometry,
   slotsForTemplate,
+  type SlotBox,
 } from "@/lib/domain/layout";
 import type { SlotLayout } from "@/lib/schemas/layout";
 import type { SlideContent } from "@/lib/schemas/carousel";
@@ -17,7 +21,11 @@ type Props = {
   selectedSlot: string | null;
   onSelectSlot: (id: string | null) => void;
   onChange: (slide: SlideContent) => void;
+  /** Mide la caja actual del slot en coords 1080 (flujo natural o absoluto). */
+  measureSlot?: (id: string) => SlotBox | null;
 };
+
+const GEO_KEYS = new Set<keyof SlotLayout>(["x", "y", "w", "h"]);
 
 function NumField({
   label,
@@ -62,7 +70,13 @@ function applyField(
   return Object.keys(next).length ? next : undefined;
 }
 
-export function LayoutPanel({ slide, selectedSlot, onSelectSlot, onChange }: Props) {
+export function LayoutPanel({
+  slide,
+  selectedSlot,
+  onSelectSlot,
+  onChange,
+  measureSlot,
+}: Props) {
   const slots = slotsForTemplate(slide.template);
   const active = selectedSlot && slots.includes(selectedSlot) ? selectedSlot : (slots[0] ?? null);
   const current = active ? getSlot(slide.layout, active) : undefined;
@@ -70,9 +84,23 @@ export function LayoutPanel({ slide, selectedSlot, onSelectSlot, onChange }: Pro
   const iconCapable = active ? isIconSlot(active) : false;
   const weightCapable = textCapable || iconCapable;
 
+  const [measured, setMeasured] = useState<SlotBox | null>(null);
+
+  useLayoutEffect(() => {
+    if (!active || !measureSlot) {
+      setMeasured(null);
+      return;
+    }
+    setMeasured(measureSlot(active));
+  }, [active, slide, measureSlot]);
+
+  const box = effectiveSlotBox(current, measured);
+
   function writeField<K extends keyof SlotLayout>(key: K, value: SlotLayout[K] | undefined) {
     if (!active) return;
-    const nextSlot = applyField(current, key, value);
+    const base =
+      GEO_KEYS.has(key) && value !== undefined ? seedGeometry(current, measured) : (current ?? {});
+    const nextSlot = applyField(base, key, value);
     onChange({
       ...slide,
       layout: replaceSlot(slide.layout, active, nextSlot),
@@ -108,10 +136,10 @@ export function LayoutPanel({ slide, selectedSlot, onSelectSlot, onChange }: Pro
       {active ? (
         <>
           <div className="grid grid-cols-2 gap-2">
-            <NumField label="X" value={current?.x ?? ""} onChange={(v) => writeField("x", v)} />
-            <NumField label="Y" value={current?.y ?? ""} onChange={(v) => writeField("y", v)} />
-            <NumField label="Ancho (W)" value={current?.w ?? ""} onChange={(v) => writeField("w", v)} />
-            <NumField label="Alto (H)" value={current?.h ?? ""} onChange={(v) => writeField("h", v)} />
+            <NumField label="X" value={box.x} onChange={(v) => writeField("x", v)} />
+            <NumField label="Y" value={box.y} onChange={(v) => writeField("y", v)} />
+            <NumField label="Ancho (W)" value={box.w} onChange={(v) => writeField("w", v)} />
+            <NumField label="Alto (H)" value={box.h} onChange={(v) => writeField("h", v)} />
           </div>
 
           {textCapable ? (

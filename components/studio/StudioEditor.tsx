@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type RefObject,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutEditProvider } from "@/components/slides/layout/LayoutEditContext";
@@ -12,7 +19,7 @@ import { LayoutPanel } from "@/components/studio/LayoutPanel";
 import { EpisodePanel } from "@/components/studio/EpisodePanel";
 import { StylePanel, type BrandKitOption } from "@/components/studio/StylePanel";
 import { resolveEpisodeTokens } from "@/lib/domain/episode-visual";
-import { setSlot, slotsForTemplate } from "@/lib/domain/layout";
+import { rectToSlideCoords, setSlot, slotsForTemplate } from "@/lib/domain/layout";
 import type { BrandTokens } from "@/lib/design-tokens";
 import { BRAND_PRESETS, SLIDE_SIZE, deepMergeBrandTokens } from "@/lib/design-tokens";
 import type { IconId } from "@/lib/icons/registry";
@@ -243,6 +250,15 @@ export function StudioEditor({
       };
     });
   }
+
+  const measureSlot = useCallback((id: string) => {
+    const root = slideFrameRef.current;
+    if (!root) return null;
+    const frame = root.querySelector("[data-slide-frame]") as HTMLElement | null;
+    const slot = root.querySelector(`[data-slot="${CSS.escape(id)}"]`) as HTMLElement | null;
+    if (!frame || !slot) return null;
+    return rectToSlideCoords(slot.getBoundingClientRect(), frame.getBoundingClientRect());
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -748,6 +764,7 @@ export function StudioEditor({
                   selectedSlot={selectedSlot}
                   onSelectSlot={setSelectedSlot}
                   onChange={(slide) => updateSlide(activeIndex, slide)}
+                  measureSlot={measureSlot}
                 />
               </CollapsibleSection>
             ) : null}

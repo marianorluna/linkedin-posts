@@ -9,7 +9,10 @@ alwaysApply: false
 - Tamaño fijo 1080×1080 vía `SlideFrame`. No cambies el tamaño ad hoc.
 - Usa CSS variables del BrandKit (`--slide-*`), no colores hardcodeados sueltos.
 - Tipografías vía tokens: `--slide-font-display`, `--slide-font-body`, `--slide-font-mono` (pares: syne-instrument, space-grotesk, dm-sans).
-- Moods permitidos: `dark-wire`, `light-flat`, `bold-blocks`. BrandKit = base; `carousel.visual.mood` puede overridear en render.
+- Moods permitidos: `dark-wire`, `light-flat`, `bold-blocks`, `soft-wash`, `paper-grain`, `neon-edge`, `split-tone`. BrandKit = base; `carousel.visual.mood` puede overridear en render.
+- Tipografías: pares en `FONT_PAIRS` (Syne/Instrument, Space Grotesk, DM Sans, Outfit, Bricolage+Plex, Plex).
+- Densidad: `air` | `compact` | `tight`.
+- Presets: usar `BRAND_PRESETS` antes de inventar paletas.
 - EpisodeVisual: motifs (`orbs|orbs-tl|orbs-center|arcs|blocks|dots|grid|ribbons|bars|diagonal|none`) vía `MotifLayer`; sin `visual` = decoración legacy del mood. `none` = plano. No dibujar círculos decorativos hardcodeados en plantillas (van en MotifLayer).
 - `accentShift` / `contrast` vía `resolveEpisodeTokens`.
 - Variantes de composición: switch por `variant` en el componente; no duplicar plantillas por silueta.

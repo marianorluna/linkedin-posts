@@ -22,6 +22,12 @@ const kitIds: Record<string, string> = {
   "light-infographic": "brand-light",
   "bold-compare": "brand-bold",
   "tech-blue": "brand-tech",
+  "slate-coral": "brand-slate-coral",
+  "forest-signal": "brand-forest",
+  "ink-mono": "brand-ink-mono",
+  "sand-teal": "brand-sand-teal",
+  "midnight-amber": "brand-midnight",
+  "studio-graphite": "brand-graphite",
 };
 
 async function main() {

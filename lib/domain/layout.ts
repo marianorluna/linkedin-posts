@@ -88,3 +88,47 @@ export function isIconSlot(id: string): boolean {
 export function hasPosition(layout?: SlotLayout): boolean {
   return layout?.x !== undefined || layout?.y !== undefined;
 }
+
+/** Convierte un rect del viewport a coords del canvas 1080×1080. */
+export function rectToSlideCoords(
+  rect: DOMRect,
+  frame: DOMRect,
+): Required<Pick<SlotLayout, "x" | "y" | "w" | "h">> {
+  const scale = frame.width / SLIDE_SIZE;
+  return {
+    x: Math.round((rect.left - frame.left) / scale),
+    y: Math.round((rect.top - frame.top) / scale),
+    w: Math.round(rect.width / scale),
+    h: Math.round(rect.height / scale),
+  };
+}
+
+export type SlotBox = Required<Pick<SlotLayout, "x" | "y" | "w" | "h">>;
+
+/** Valores efectivos: override del JSON + caja medida del DOM (flujo natural). */
+export function effectiveSlotBox(
+  layout: SlotLayout | undefined,
+  measured: SlotBox | null | undefined,
+): { x: number | ""; y: number | ""; w: number | ""; h: number | "" } {
+  return {
+    x: layout?.x ?? measured?.x ?? "",
+    y: layout?.y ?? measured?.y ?? "",
+    w: layout?.w ?? measured?.w ?? "",
+    h: layout?.h ?? measured?.h ?? "",
+  };
+}
+
+/** Antes del primer override geométrico, fija x/y/w/h desde la medida del DOM. */
+export function seedGeometry(
+  layout: SlotLayout | undefined,
+  measured: SlotBox | null | undefined,
+): SlotLayout {
+  if (!measured) return layout ?? {};
+  return {
+    x: measured.x,
+    y: measured.y,
+    w: measured.w,
+    h: measured.h,
+    ...layout,
+  };
+}

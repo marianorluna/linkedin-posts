@@ -2,8 +2,11 @@
 
 import {
   DENSITIES,
+  DENSITY_LABELS,
   FONT_PAIRS,
+  FONT_PAIR_LABELS,
   MOODS,
+  MOOD_LABELS,
   type BrandTokens,
   type Density,
   type FontPair,
@@ -139,7 +142,7 @@ export function StylePanel({
         >
           {MOODS.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {MOOD_LABELS[m]}
             </option>
           ))}
         </select>
@@ -162,7 +165,7 @@ export function StylePanel({
         >
           {FONT_PAIRS.map((p) => (
             <option key={p} value={p}>
-              {p}
+              {FONT_PAIR_LABELS[p]}
             </option>
           ))}
         </select>
@@ -181,7 +184,7 @@ export function StylePanel({
         >
           {DENSITIES.map((d) => (
             <option key={d} value={d}>
-              {d}
+              {DENSITY_LABELS[d]}
             </option>
           ))}
         </select>

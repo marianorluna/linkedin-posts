@@ -7,7 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { hasPosition } from "@/lib/domain/layout";
+import { hasPosition, rectToSlideCoords } from "@/lib/domain/layout";
 import type { SlotLayout } from "@/lib/schemas/layout";
 import { useLayoutEdit } from "./LayoutEditContext";
 
@@ -62,17 +62,19 @@ export function LayoutSlot({ id, layout, children, className = "" }: Props) {
 
   const ensurePosition = useCallback(() => {
     if (!edit || !ref.current) return layout ?? {};
-    if (hasPosition(layout)) return layout ?? {};
+    if (hasPosition(layout) && layout?.w !== undefined && layout?.h !== undefined) {
+      return layout;
+    }
     const frame = edit.measureFrame();
     if (!frame) return layout ?? {};
-    const rect = ref.current.getBoundingClientRect();
-    const scale = frame.width / 1080;
+    const box = rectToSlideCoords(ref.current.getBoundingClientRect(), frame);
     return {
+      ...box,
       ...layout,
-      x: Math.round((rect.left - frame.left) / scale),
-      y: Math.round((rect.top - frame.top) / scale),
-      w: layout?.w ?? Math.round(rect.width / scale),
-      h: layout?.h ?? Math.round(rect.height / scale),
+      x: layout?.x ?? box.x,
+      y: layout?.y ?? box.y,
+      w: layout?.w ?? box.w,
+      h: layout?.h ?? box.h,
     };
   }, [edit, layout]);
 
@@ -82,17 +84,14 @@ export function LayoutSlot({ id, layout, children, className = "" }: Props) {
     e.preventDefault();
     edit.selectSlot(id);
     const base = ensurePosition();
-    const frame = edit.measureFrame();
-    if (!frame) return;
-    const scale = frame.width / 1080;
     dragRef.current = {
       mode,
       startX: e.clientX,
       startY: e.clientY,
       originX: base.x ?? 0,
       originY: base.y ?? 0,
-      originW: base.w ?? Math.round((ref.current?.getBoundingClientRect().width ?? 100) / scale),
-      originH: base.h ?? Math.round((ref.current?.getBoundingClientRect().height ?? 100) / scale),
+      originW: base.w ?? 100,
+      originH: base.h ?? 100,
     };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }

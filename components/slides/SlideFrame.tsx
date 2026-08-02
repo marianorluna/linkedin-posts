@@ -23,10 +23,12 @@ function MoodBackground({
   mood: BrandTokens["mood"];
   legacyDecor: boolean;
 }) {
+  const base = <div className="absolute inset-0" style={{ background: "var(--slide-bg)" }} />;
+
   if (mood === "light-flat") {
     return (
       <>
-        <div className="absolute inset-0" style={{ background: "var(--slide-bg)" }} />
+        {base}
         {legacyDecor ? (
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.35]"
@@ -44,7 +46,7 @@ function MoodBackground({
   if (mood === "bold-blocks") {
     return (
       <>
-        <div className="absolute inset-0" style={{ background: "var(--slide-bg)" }} />
+        {base}
         {legacyDecor ? (
           <>
             <div
@@ -61,7 +63,87 @@ function MoodBackground({
     );
   }
 
-  // dark-wire
+  if (mood === "soft-wash") {
+    return (
+      <div
+        className="absolute inset-0"
+        style={{
+          background: legacyDecor
+            ? `
+            radial-gradient(ellipse 90% 70% at 20% 0%, color-mix(in srgb, var(--slide-accent) 20%, transparent), transparent 55%),
+            radial-gradient(ellipse 80% 60% at 100% 100%, color-mix(in srgb, var(--slide-highlight) 14%, transparent), transparent 50%),
+            linear-gradient(165deg, var(--slide-bg) 0%, var(--slide-bg-elevated) 100%)
+          `
+            : `linear-gradient(165deg, var(--slide-bg) 0%, var(--slide-bg-elevated) 100%)`,
+        }}
+      />
+    );
+  }
+
+  if (mood === "paper-grain") {
+    return (
+      <>
+        {base}
+        {legacyDecor ? (
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.45]"
+            style={{
+              backgroundImage: `
+                radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--slide-ink) 6%, transparent) 0.6px, transparent 0.8px),
+                radial-gradient(circle at 70% 60%, color-mix(in srgb, var(--slide-ink) 5%, transparent) 0.5px, transparent 0.7px)
+              `,
+              backgroundSize: "6px 6px, 9px 9px",
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  if (mood === "neon-edge") {
+    return (
+      <>
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(155deg, var(--slide-bg) 0%, var(--slide-bg-elevated) 100%)`,
+          }}
+        />
+        {legacyDecor ? (
+          <>
+            <div
+              className="pointer-events-none absolute inset-4 rounded-[28px]"
+              style={{ boxShadow: "inset 0 0 0 2px color-mix(in srgb, var(--slide-accent) 45%, transparent)" }}
+            />
+            <div
+              className="pointer-events-none absolute inset-0 opacity-40"
+              style={{
+                background: `radial-gradient(ellipse 50% 40% at 85% 15%, color-mix(in srgb, var(--slide-accent) 22%, transparent), transparent 60%)`,
+              }}
+            />
+          </>
+        ) : null}
+      </>
+    );
+  }
+
+  if (mood === "split-tone") {
+    return (
+      <>
+        {base}
+        {legacyDecor ? (
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 w-1/2"
+            style={{
+              background: `linear-gradient(90deg, color-mix(in srgb, var(--slide-accent) 14%, transparent), transparent)`,
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  // dark-wire (default)
   return (
     <>
       <div

@@ -57,11 +57,12 @@ No uses Midjourney/DALL·E para el layout. El layout vive en `components/slides/
 
 ## Estilo
 
-- BrandKits / presets: Wireframe Studio, Light Infographic (default nuevos posts), Bold Compare, Tech Blue.
-- Moods: `dark-wire` | `light-flat` | `bold-blocks`.
-- Tipografías: pares `syne-instrument` | `space-grotesk` | `dm-sans`.
+- BrandKits / presets: Wireframe Studio, Light Infographic (default nuevos posts), Bold Compare, Tech Blue, Slate Coral, Forest Signal, Ink Mono, Sand Teal, Midnight Amber, Studio Graphite.
+- Moods: `dark-wire` | `light-flat` | `bold-blocks` | `soft-wash` | `paper-grain` | `neon-edge` | `split-tone`.
+- Tipografías: `syne-instrument` | `space-grotesk` | `dm-sans` | `outfit` | `bricolage-plex` | `plex`.
+- Densidad: `air` | `compact` | `tight`.
 - Iconos: solo IDs del catálogo SVG (no emojis).
-- Editar estilo en BrandKit; variedad por tema vía EpisodeVisual + variants (no inventar paletas por post).
+- Editar estilo en BrandKit; variedad por tema vía EpisodeVisual + variants + preset (no inventar paletas sueltas por post).
 
 ## Flujo habitual
 
