@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Studio Infografías LinkedIn
 
-## Getting Started
+Genera carruseles LinkedIn como diapositivas React **1080×1080** con estilo UI/wireframe propio, edita el contenido en JSON tipado y exporta un **PDF multipágina** listo para subir como documento.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript + Tailwind
+- Prisma + SQLite (local)
+- Zod (contrato de contenido)
+- Playwright + pdf-lib (export)
+- LLM opcional (Anthropic u OpenAI)
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env
+pnpm db:setup
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Variables de entorno
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Uso |
+|----------|-----|
+| `DATABASE_URL` | SQLite (`file:./dev.db`) |
+| `NEXT_PUBLIC_APP_URL` | Base URL para Playwright (`http://localhost:3000`) |
+| `ANTHROPIC_API_KEY` | Generación IA (prioridad) |
+| `OPENAI_API_KEY` | Generación IA alternativa |
+| `OPENAI_MODEL` / `ANTHROPIC_MODEL` | Modelo (opcional) |
 
-## Learn More
+Sin API key, **Generar con IA** usa un carrusel demo editable.
 
-To learn more about Next.js, take a look at the following resources:
+## Flujo LinkedIn
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Crea o edita un carrusel en el studio.
+2. Guarda una versión.
+3. **Exportar PDF** (el servidor `pnpm dev` debe estar activo).
+4. Descarga el PDF y súbelo a LinkedIn como documento/carrusel.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Plantillas
 
-## Deploy on Vercel
+`hook` · `ab-compare` · `stat-hero` · `steps` · `phone-mock` · `cta`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Repo vs local
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **GitHub:** código, plantillas, schemas, `AGENTS.md`, `.cursor/rules`, skills.
+- **Local (gitignored):** `.env`, `prisma/*.db`, `storage/exports/`.
+
+No hace falta Coolify/Docker para el MVP: trabajas en local con Cursor y publicas el PDF a mano.
+
+## Comandos útiles
+
+```bash
+pnpm db:generate   # Prisma client
+pnpm db:push       # Sync schema SQLite
+pnpm db:seed       # BrandKit + templates + post de ejemplo
+pnpm lint
+pnpm build
+```

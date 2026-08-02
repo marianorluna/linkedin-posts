@@ -1,0 +1,13 @@
+---
+description: Export PNG/PDF 1080x1080 para LinkedIn
+globs: lib/infra/export.ts,app/render/**,app/api/export/**
+alwaysApply: false
+---
+
+# Export
+
+- Render limpio en `/render/[versionId]?slide=n` sin chrome del studio.
+- Screenshot del nodo `[data-slide-frame]` a 1080×1080.
+- PDF: una página por slide, mismo tamaño, vía pdf-lib.
+- Assets en `storage/exports/` (gitignored); metadatos en `ExportAsset`.
+- El export necesita el servidor Next en marcha (`NEXT_PUBLIC_APP_URL`).

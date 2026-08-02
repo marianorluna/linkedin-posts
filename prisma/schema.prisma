@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model BrandKit {
+  id        String   @id @default(cuid())
+  name      String
+  tokensJson String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]
+}
+
+model Template {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String
+  schemaVersion Int      @default(1)
+  createdAt     DateTime @default(now())
+}
+
+model Post {
+  id          String        @id @default(cuid())
+  title       String
+  topic       String
+  tags        String        @default("[]")
+  status      String        @default("draft")
+  brandKitId  String
+  brandKit    BrandKit      @relation(fields: [brandKitId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  versions    PostVersion[]
+}
+
+model PostVersion {
+  id          String        @id @default(cuid())
+  postId      String
+  post        Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  contentJson String
+  promptMeta  String?
+  createdAt   DateTime      @default(now())
+  assets      ExportAsset[]
+}
+
+model ExportAsset {
+  id        String      @id @default(cuid())
+  versionId String
+  version   PostVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  format    String
+  path      String
+  width     Int         @default(1080)
+  height    Int         @default(1080)
+  hash      String?
+  createdAt DateTime    @default(now())
+}
