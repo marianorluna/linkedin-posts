@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const FILTERS: { id: PostOriginFilter; label: string }[] = [
   { id: "all", label: "Todos" },
   { id: "template", label: "Plantillas" },
-  { id: "user", label: "Míos" },
+  { id: "user", label: "Propios" },
 ];
 
 function hrefFor(filter: PostOriginFilter, page: number) {
@@ -99,9 +99,9 @@ export default async function HomePage({ searchParams }: PageProps) {
           )}
         </div>
       ) : (
-        <ul className="grid min-h-0 flex-1 grid-cols-2 grid-rows-6 gap-2 overflow-hidden md:grid-cols-3 md:grid-rows-4 lg:grid-cols-4 lg:grid-rows-3">
+        <ul className="grid min-h-0 flex-1 grid-cols-2 grid-rows-6 gap-4 overflow-hidden md:grid-cols-3 md:grid-rows-4 lg:grid-cols-6 lg:grid-rows-2">
           {result.items.map((post) => (
-            <li key={post.id} className="min-h-0">
+            <li key={post.id} className="min-h-0 min-w-0">
               <PostCard post={post} />
             </li>
           ))}

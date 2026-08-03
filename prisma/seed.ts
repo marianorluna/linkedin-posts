@@ -69,19 +69,46 @@ async function main() {
   }
 
   let created = 0;
-  let skipped = 0;
+  let refreshed = 0;
 
   for (const entry of SEED_CAROUSELS) {
     const content = carouselSchema.parse(entry.content);
     const brandKitId =
       brandKitByPreset[entry.brandPresetKey] ?? brandKitByPreset["light-infographic"];
+    const promptMeta = JSON.stringify({ source: "seed", arc: entry.arc });
 
     const existing = await prisma.post.findFirst({
       where: { title: content.title },
+      include: { versions: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
 
     if (existing) {
-      skipped += 1;
+      const latest = existing.versions[0];
+      await prisma.post.update({
+        where: { id: existing.id },
+        data: {
+          topic: content.topic,
+          tags: JSON.stringify(content.tags),
+          status: "ready",
+          origin: "template",
+          brandKitId,
+        },
+      });
+      if (latest) {
+        await prisma.postVersion.update({
+          where: { id: latest.id },
+          data: { contentJson: JSON.stringify(content), promptMeta },
+        });
+      } else {
+        await prisma.postVersion.create({
+          data: {
+            postId: existing.id,
+            contentJson: JSON.stringify(content),
+            promptMeta,
+          },
+        });
+      }
+      refreshed += 1;
       continue;
     }
 
@@ -96,7 +123,7 @@ async function main() {
         versions: {
           create: {
             contentJson: JSON.stringify(content),
-            promptMeta: JSON.stringify({ source: "seed", arc: entry.arc }),
+            promptMeta,
           },
         },
       },
@@ -115,7 +142,7 @@ async function main() {
     templates: TEMPLATE_SLUGS.length,
     seedCarousels: SEED_CAROUSELS.length,
     created,
-    skipped,
+    refreshed,
     originBackfilled: backfilled.count,
   });
 }

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/infra/prisma";
 import { resolveDefaultBrandKitId } from "@/lib/domain/brand-kit-service";
+import { resolveEpisodeTokens } from "@/lib/domain/episode-visual";
 import {
   assertPostOrigin,
   assertPostStatus,
@@ -10,8 +11,18 @@ import {
   type PostOrigin,
   type PostOriginFilter,
 } from "@/lib/domain/post";
-import type { CarouselContent } from "@/lib/schemas/carousel";
+import type { CarouselContent, SlideContent } from "@/lib/schemas/carousel";
 import { carouselSchema } from "@/lib/schemas/carousel";
+import type { BrandTokens } from "@/lib/design-tokens";
+import type { Contrast, Motif } from "@/lib/schemas/episode-visual";
+
+export type PostListPreview = {
+  slide: SlideContent;
+  tokens: BrandTokens;
+  motif: Motif;
+  contrast: Contrast;
+  legacyMoodDecor: boolean;
+};
 
 function mapPostListItem(post: {
   id: string;
@@ -22,9 +33,33 @@ function mapPostListItem(post: {
   origin: string;
   updatedAt: Date;
   createdAt: Date;
+  brandKit: { tokensJson: string };
   versions: { id: string; contentJson: string }[];
   _count: { versions: number };
 }) {
+  const latest = post.versions[0];
+  let slideCount = 0;
+  let preview: PostListPreview | null = null;
+
+  if (latest) {
+    const content = parseContentJson(latest.contentJson);
+    slideCount = content.slides.length;
+    const first = content.slides[0];
+    if (first) {
+      const episode = resolveEpisodeTokens(
+        parseBrandTokens(post.brandKit.tokensJson),
+        content.visual,
+      );
+      preview = {
+        slide: first,
+        tokens: episode.tokens,
+        motif: episode.motif,
+        contrast: episode.contrast,
+        legacyMoodDecor: episode.legacyMoodDecor,
+      };
+    }
+  }
+
   return {
     id: post.id,
     title: post.title,
@@ -35,10 +70,9 @@ function mapPostListItem(post: {
     updatedAt: post.updatedAt.toISOString(),
     createdAt: post.createdAt.toISOString(),
     versionCount: post._count.versions,
-    latestVersionId: post.versions[0]?.id ?? null,
-    slideCount: post.versions[0]
-      ? parseContentJson(post.versions[0].contentJson).slides.length
-      : 0,
+    latestVersionId: latest?.id ?? null,
+    slideCount,
+    preview,
   };
 }
 

@@ -65,7 +65,7 @@ No uses Midjourney/DALL·E para el layout. El layout vive en `components/slides/
 - Primitives de maqueta: `PhoneFrame` / `LaptopFrame` / `BrowserFrame` en `components/slides/primitives/DeviceFrames.tsx` (variants de `phone-mock`).
 - En listas con color (`ribbon-steps`, `icon-rows`, `icon-bento`): `tone` opcional por ítem (`accent` | `accentAlt` | `highlight` | `surface`) del BrandKit; sin `tone` = rotación automática. En `vs-split`: `leftTone` / `rightTone` opcionales (default accent / accentAlt).
 - Editar estilo en BrandKit; variedad por tema vía EpisodeVisual + variants + preset (no inventar paletas sueltas por post).
-- **Kit seed:** 10 carruseles en `lib/schemas/seed-carousels.ts` (`pnpm db:seed`). Clonar desde la lista con **Duplicar** y reescribir.
+- **Kit seed:** 10 carruseles en `lib/schemas/seed-carousels.ts` (`pnpm db:seed`). Cada plantilla trae **10 slides** (1 de cada slug del catálogo) para previsualizar el estilo completo; luego quita/añade. Incluye `phone-mock` (móvil/laptop/browser). Clonar con **Duplicar** y reescribir.
 
 ## Flujo habitual
 
