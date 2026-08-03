@@ -156,6 +156,46 @@ function paths(id: IconId): ReactNode {
           <path d="M16 16l4 4" />
         </>
       );
+    case "code":
+      return (
+        <>
+          <path d="M8 8l-4 4 4 4" />
+          <path d="M16 8l4 4-4 4" />
+          <path d="M13 5l-2 14" />
+        </>
+      );
+    case "terminal":
+      return (
+        <>
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M7 9l3 3-3 3" />
+          <path d="M12 15h5" />
+        </>
+      );
+    case "building":
+      return (
+        <>
+          <path d="M4 21V5l8-2 8 2v16" />
+          <path d="M4 21h16" />
+          <path d="M9 9h1.5M13.5 9H15M9 13h1.5M13.5 13H15M9 17h1.5M13.5 17H15" />
+          <path d="M11 21v-4h2v4" />
+        </>
+      );
+    case "layers":
+      return (
+        <>
+          <path d="M12 3l9 5-9 5-9-5 9-5z" />
+          <path d="M3 12l9 5 9-5" />
+          <path d="M3 16l9 5 9-5" />
+        </>
+      );
+    case "spark":
+      return (
+        <>
+          <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      );
     default: {
       const _exhaustive: never = id;
       return _exhaustive;

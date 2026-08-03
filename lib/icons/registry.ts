@@ -17,6 +17,11 @@ export const ICON_IDS = [
   "growth",
   "coin",
   "search",
+  "code",
+  "terminal",
+  "building",
+  "layers",
+  "spark",
 ] as const;
 
 export type IconId = (typeof ICON_IDS)[number];

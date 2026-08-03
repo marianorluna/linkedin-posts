@@ -30,7 +30,7 @@ No uses Midjourney/DALL·E para el layout. El layout vive en `components/slides/
 | `ab-compare` | Dos % horizontales | `default` |
 | `stat-hero` | Número grande | `stack`, `watermark`, `left-rail` |
 | `steps` | 2–3 pasos | `default` |
-| `phone-mock` | Maqueta móvil | `default` |
+| `phone-mock` | Maqueta dispositivo | `default` (móvil), `laptop`, `browser` |
 | `cta` | Cierre | `centered`, `bottom-bar`, `question-big` |
 | `vs-split` | Comparativa A/B + eje de iconos | `columns`, `stacked-cards` |
 | `ribbon-steps` | Banners numerados | `diagonal`, `numbered-rail` |
@@ -61,13 +61,15 @@ No uses Midjourney/DALL·E para el layout. El layout vive en `components/slides/
 - Moods: `dark-wire` | `light-flat` | `bold-blocks` | `soft-wash` | `paper-grain` | `neon-edge` | `split-tone`.
 - Tipografías: `syne-instrument` | `space-grotesk` | `dm-sans` | `outfit` | `bricolage-plex` | `plex`.
 - Densidad: `air` | `compact` | `tight`.
-- Iconos: solo IDs del catálogo SVG (no emojis).
+- Iconos: solo IDs del catálogo SVG (no emojis). Incluye tech: `code`, `terminal`, `building`, `layers`, `spark` (+ catálogo previo).
+- Primitives de maqueta: `PhoneFrame` / `LaptopFrame` / `BrowserFrame` en `components/slides/primitives/DeviceFrames.tsx` (variants de `phone-mock`).
 - En listas con color (`ribbon-steps`, `icon-rows`, `icon-bento`): `tone` opcional por ítem (`accent` | `accentAlt` | `highlight` | `surface`) del BrandKit; sin `tone` = rotación automática. En `vs-split`: `leftTone` / `rightTone` opcionales (default accent / accentAlt).
 - Editar estilo en BrandKit; variedad por tema vía EpisodeVisual + variants + preset (no inventar paletas sueltas por post).
+- **Kit seed:** 10 carruseles en `lib/schemas/seed-carousels.ts` (`pnpm db:seed`). Clonar desde la lista con **Duplicar** y reescribir.
 
 ## Flujo habitual
 
-1. Brief + Visual Brief (arco / hero / motivo) → `/api/generate` o editar JSON/campos en el studio.
+1. **Clonar plantilla del kit** (Duplicar en la tarjeta) o Brief + Visual Brief → `/api/generate` / editar en el studio.
 2. Validar con `carouselSchema`.
 3. Ajustar BrandKit (preset / colores / mood) en el StylePanel.
 4. Ajustar Episodio (`visual`) y variantes por slide.

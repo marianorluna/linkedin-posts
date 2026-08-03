@@ -31,6 +31,8 @@ model Post {
   topic       String
   tags        String        @default("[]")
   status      String        @default("draft")
+  /// template = kit seed; user = creado o duplicado en el studio
+  origin      String        @default("user")
   brandKitId  String
   brandKit    BrandKit      @relation(fields: [brandKitId], references: [id])
   createdAt   DateTime      @default(now())

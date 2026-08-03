@@ -58,7 +58,14 @@ export function SlideRenderer({
       case "steps":
         return <StepsSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
       case "phone-mock":
-        return <PhoneMockSlide tokens={tokens} data={slide.data} layout={slide.layout} />;
+        return (
+          <PhoneMockSlide
+            tokens={tokens}
+            data={slide.data}
+            layout={slide.layout}
+            variant={resolveVariant("phone-mock", slide.variant)}
+          />
+        );
       case "cta":
         return (
           <CtaSlide

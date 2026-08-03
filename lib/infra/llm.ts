@@ -36,7 +36,7 @@ Plantillas y cuándo usarlas:
 - ab-compare: dos % 0–100 (antes/después).
 - stat-hero: un número grande + frase.
 - steps: 2–5 pasos (icon opcional por paso).
-- phone-mock: maqueta móvil, 1–6 screenLines.
+- phone-mock: maqueta dispositivo (variants: default=móvil, laptop, browser), 1–6 screenLines.
 - cta: cierre con pregunta/CTA (icon opcional).
 - vs-split: comparativa A/B por filas con icono central (2–5 rows: topic, left, right, icon; leftTone/rightTone opcionales del BrandKit).
 - ribbon-steps: 2–10 banners numerados (title, detail, icon, tone opcional: accent|accentAlt|highlight|surface).
@@ -49,7 +49,7 @@ ${VARIANTS_DOC}
 Arcos narrativos (elige UNO según el brief; no uses siempre el mismo):
 ${ARCS_DOC}
 
-Iconos permitidos (SVG): lightbulb, gears, chart-up, brain, target, flag, users, process, globe, cloud, chip, robot, network, document, check, growth, coin, search.
+Iconos permitidos (SVG): lightbulb, gears, chart-up, brain, target, flag, users, process, globe, cloud, chip, robot, network, document, check, growth, coin, search, code, terminal, building, layers, spark.
 
 Reglas de contenido:
 - Español.

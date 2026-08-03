@@ -1,47 +1,144 @@
 import Link from "next/link";
 import { PostCard } from "@/components/studio/PostCard";
-import { listPosts } from "@/lib/domain/post-service";
+import { HOME_PAGE_SIZE, parseOriginFilter, type PostOriginFilter } from "@/lib/domain/post";
+import { listPostsPage } from "@/lib/domain/post-service";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const posts = await listPosts();
+const FILTERS: { id: PostOriginFilter; label: string }[] = [
+  { id: "all", label: "Todos" },
+  { id: "template", label: "Plantillas" },
+  { id: "user", label: "Míos" },
+];
+
+function hrefFor(filter: PostOriginFilter, page: number) {
+  const params = new URLSearchParams();
+  if (filter !== "all") params.set("filter", filter);
+  if (page > 1) params.set("page", String(page));
+  const q = params.toString();
+  return q ? `/?${q}` : "/";
+}
+
+type PageProps = {
+  searchParams: Promise<{ filter?: string; page?: string }>;
+};
+
+export default async function HomePage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const filter = parseOriginFilter(params.filter);
+  const pageRaw = Number.parseInt(params.page ?? "1", 10);
+  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+
+  const result = await listPostsPage({
+    origin: filter,
+    page,
+    pageSize: HOME_PAGE_SIZE,
+  });
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-12">
-      <header className="flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <p className="font-[family-name:var(--font-mono)] text-xs tracking-[0.2em] text-[var(--accent)] uppercase">
+    <div className="fixed inset-0 flex flex-col overflow-hidden px-4 py-4 md:px-6">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-3">
+        <div className="min-w-0">
+          <p className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.2em] text-[var(--accent)] uppercase">
             Studio LinkedIn
           </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">
-            Carruseles
-          </h1>
-          <p className="mt-2 max-w-xl text-[var(--muted)]">
-            Plantillas fijas, contenido editable, export PDF 1080×1080 listo para documento LinkedIn.
-          </p>
+          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
+              Carruseles
+            </h1>
+            <p className="text-xs text-[var(--muted)] md:text-sm">
+              {result.total} en total · {HOME_PAGE_SIZE}/página
+            </p>
+          </div>
         </div>
-        <Link
-          href="/posts/new"
-          className="rounded-full bg-[var(--accent)] px-6 py-3 font-medium text-[#0b1015] transition hover:brightness-110"
-        >
-          Nuevo carrusel
-        </Link>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <nav
+            className="flex rounded-full border border-[var(--panel-border)] bg-[var(--panel)] p-0.5"
+            aria-label="Filtrar por origen"
+          >
+            {FILTERS.map((item) => {
+              const active = filter === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={hrefFor(item.id, 1)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                    active
+                      ? "bg-[var(--accent)] text-[#0b1015]"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <Link
+            href="/posts/new"
+            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1015] transition hover:brightness-110"
+          >
+            Nuevo carrusel
+          </Link>
+        </div>
       </header>
 
-      {posts.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-10 text-[var(--muted)]">
-          No hay posts todavía. Crea el primero o ejecuta <code className="text-[var(--accent)]">pnpm db:seed</code>.
+      {result.total === 0 ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-8 text-sm text-[var(--muted)]">
+          {filter === "user" ? (
+            <span>Aún no tienes carruseles propios. Duplica una plantilla o crea uno nuevo.</span>
+          ) : filter === "template" ? (
+            <span>
+              No hay plantillas. Ejecuta <code className="text-[var(--accent)]">pnpm db:seed</code>.
+            </span>
+          ) : (
+            <span>
+              No hay posts. Crea el primero o ejecuta{" "}
+              <code className="text-[var(--accent)]">pnpm db:seed</code>.
+            </span>
+          )}
         </div>
       ) : (
-        <ul className="grid auto-rows-fr gap-4 sm:grid-cols-2">
-          {posts.map((post) => (
-            <li key={post.id} className="h-full">
+        <ul className="grid min-h-0 flex-1 grid-cols-2 grid-rows-6 gap-2 overflow-hidden md:grid-cols-3 md:grid-rows-4 lg:grid-cols-4 lg:grid-rows-3">
+          {result.items.map((post) => (
+            <li key={post.id} className="min-h-0">
               <PostCard post={post} />
             </li>
           ))}
         </ul>
       )}
+
+      <footer className="flex shrink-0 items-center justify-between gap-3 pt-3 text-xs text-[var(--muted)]">
+        <span>
+          Página {result.page} de {result.totalPages}
+        </span>
+        <div className="flex items-center gap-2">
+          {result.page > 1 ? (
+            <Link
+              href={hrefFor(filter, result.page - 1)}
+              className="rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Anterior
+            </Link>
+          ) : (
+            <span className="rounded-full border border-transparent px-3 py-1.5 opacity-40">
+              Anterior
+            </span>
+          )}
+          {result.page < result.totalPages ? (
+            <Link
+              href={hrefFor(filter, result.page + 1)}
+              className="rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Siguiente
+            </Link>
+          ) : (
+            <span className="rounded-full border border-transparent px-3 py-1.5 opacity-40">
+              Siguiente
+            </span>
+          )}
+        </div>
+      </footer>
     </div>
   );
 }

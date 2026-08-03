@@ -4,6 +4,10 @@ import type { CarouselContent } from "@/lib/schemas/carousel";
 import { carouselSchema } from "@/lib/schemas/carousel";
 
 export type PostStatus = "draft" | "ready" | "archived";
+export type PostOrigin = "template" | "user";
+export type PostOriginFilter = "all" | PostOrigin;
+
+export const HOME_PAGE_SIZE = 12;
 
 export function parseTags(raw: string): string[] {
   try {
@@ -31,4 +35,16 @@ export function assertPostStatus(value: string): PostStatus {
     return value;
   }
   return "draft";
+}
+
+export function assertPostOrigin(value: string): PostOrigin {
+  if (value === "template" || value === "user") {
+    return value;
+  }
+  return "user";
+}
+
+export function parseOriginFilter(value: string | undefined | null): PostOriginFilter {
+  if (value === "template" || value === "user") return value;
+  return "all";
 }

@@ -7,7 +7,7 @@ export const TEMPLATE_VARIANTS = {
   "icon-bento": ["grid", "hero-cell"],
   "ab-compare": ["default"],
   steps: ["default"],
-  "phone-mock": ["default"],
+  "phone-mock": ["default", "laptop", "browser"],
   "icon-rows": ["default"],
 } as const;
 

@@ -1,37 +1,93 @@
 import { prisma } from "@/lib/infra/prisma";
 import { resolveDefaultBrandKitId } from "@/lib/domain/brand-kit-service";
 import {
+  assertPostOrigin,
   assertPostStatus,
+  HOME_PAGE_SIZE,
   parseBrandTokens,
   parseContentJson,
   parseTags,
+  type PostOrigin,
+  type PostOriginFilter,
 } from "@/lib/domain/post";
 import type { CarouselContent } from "@/lib/schemas/carousel";
 import { carouselSchema } from "@/lib/schemas/carousel";
 
-export async function listPosts() {
-  const posts = await prisma.post.findMany({
-    orderBy: { updatedAt: "desc" },
-    include: {
-      versions: { orderBy: { createdAt: "desc" }, take: 1 },
-      brandKit: true,
-      _count: { select: { versions: true } },
-    },
-  });
-
-  return posts.map((post) => ({
+function mapPostListItem(post: {
+  id: string;
+  title: string;
+  topic: string;
+  tags: string;
+  status: string;
+  origin: string;
+  updatedAt: Date;
+  createdAt: Date;
+  versions: { id: string; contentJson: string }[];
+  _count: { versions: number };
+}) {
+  return {
     id: post.id,
     title: post.title,
     topic: post.topic,
     tags: parseTags(post.tags),
     status: assertPostStatus(post.status),
+    origin: assertPostOrigin(post.origin),
     updatedAt: post.updatedAt.toISOString(),
+    createdAt: post.createdAt.toISOString(),
     versionCount: post._count.versions,
     latestVersionId: post.versions[0]?.id ?? null,
     slideCount: post.versions[0]
       ? parseContentJson(post.versions[0].contentJson).slides.length
       : 0,
-  }));
+  };
+}
+
+const listInclude = {
+  versions: { orderBy: { createdAt: "desc" as const }, take: 1 },
+  brandKit: true,
+  _count: { select: { versions: true } },
+};
+
+/** Prefer listPostsPage for filtered/paginated home. */
+export async function listPosts() {
+  const posts = await prisma.post.findMany({
+    orderBy: { createdAt: "desc" },
+    include: listInclude,
+  });
+  return posts.map(mapPostListItem);
+}
+
+export async function listPostsPage(
+  input: {
+    origin?: PostOriginFilter;
+    page?: number;
+    pageSize?: number;
+  } = {},
+) {
+  const origin = input.origin ?? "all";
+  const pageSize = Math.max(1, input.pageSize ?? HOME_PAGE_SIZE);
+  const page = Math.max(1, input.page ?? 1);
+  const where = origin === "all" ? {} : { origin };
+
+  const total = await prisma.post.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  const posts = await prisma.post.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    skip: (safePage - 1) * pageSize,
+    take: pageSize,
+    include: listInclude,
+  });
+
+  return {
+    items: posts.map(mapPostListItem),
+    total,
+    page: safePage,
+    pageSize,
+    totalPages,
+  };
 }
 
 export async function getPostDetail(id: string) {
@@ -55,6 +111,7 @@ export async function getPostDetail(id: string) {
     topic: post.topic,
     tags: parseTags(post.tags),
     status: assertPostStatus(post.status),
+    origin: assertPostOrigin(post.origin),
     brandKit: {
       id: post.brandKit.id,
       name: post.brandKit.name,
@@ -84,6 +141,7 @@ export async function createPost(input: {
   status?: string;
   promptMeta?: unknown;
   brandKitId?: string;
+  origin?: PostOrigin;
 }) {
   const content = carouselSchema.parse(input.content);
   const brandKitId = input.brandKitId ?? (await resolveDefaultBrandKitId());
@@ -94,6 +152,7 @@ export async function createPost(input: {
       topic: content.topic,
       tags: JSON.stringify(content.tags),
       status: input.status ?? "draft",
+      origin: input.origin ?? "user",
       brandKitId,
       versions: {
         create: {
@@ -154,6 +213,43 @@ export async function saveNewVersion(
 
 export async function deletePost(id: string) {
   return prisma.post.delete({ where: { id } });
+}
+
+const TITLE_MAX = 80;
+
+export async function duplicatePost(id: string) {
+  const source = await prisma.post.findUnique({
+    where: { id },
+    include: {
+      versions: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+
+  if (!source) {
+    throw new Error("Post no encontrado");
+  }
+
+  const latest = source.versions[0];
+  if (!latest) {
+    throw new Error("El post no tiene versiones");
+  }
+
+  const content = carouselSchema.parse(parseContentJson(latest.contentJson));
+  const copySuffix = " (copia)";
+  const baseMax = TITLE_MAX - copySuffix.length;
+  const baseTitle = content.title.slice(0, Math.max(1, baseMax));
+  const duplicated: CarouselContent = {
+    ...content,
+    title: `${baseTitle}${copySuffix}`,
+  };
+
+  return createPost({
+    content: duplicated,
+    status: "draft",
+    brandKitId: source.brandKitId,
+    origin: "user",
+    promptMeta: { source: "duplicate", fromPostId: id },
+  });
 }
 
 export async function getVersion(versionId: string) {

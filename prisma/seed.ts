@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { BRAND_PRESETS } from "../lib/design-tokens";
-import { sampleCarousel, sampleProcessCarousel, TEMPLATE_SLUGS } from "../lib/schemas/carousel";
+import { carouselSchema, TEMPLATE_SLUGS } from "../lib/schemas/carousel";
+import { SEED_CAROUSELS } from "../lib/schemas/seed-carousels";
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,10 @@ const templateMeta: Record<(typeof TEMPLATE_SLUGS)[number], { name: string; desc
   "ab-compare": { name: "Comparativa A/B", description: "Barras de progreso horizontales" },
   "stat-hero": { name: "Stat hero", description: "Un número grande y una frase" },
   steps: { name: "Pasos", description: "Proceso de 2–3 pasos" },
-  "phone-mock": { name: "Phone mock", description: "Maqueta de teléfono + caption" },
+  "phone-mock": {
+    name: "Phone mock",
+    description: "Maqueta móvil / laptop / browser + caption",
+  },
   cta: { name: "CTA", description: "Cierre con pregunta o llamada a acción" },
   "vs-split": { name: "VS split", description: "Comparativa dos columnas con eje de iconos" },
   "ribbon-steps": { name: "Ribbon steps", description: "Banners numerados tipo cinta" },
@@ -31,7 +35,7 @@ const kitIds: Record<string, string> = {
 };
 
 async function main() {
-  let lightKitId = "brand-light";
+  const brandKitByPreset: Record<string, string> = {};
 
   for (const [key, preset] of Object.entries(BRAND_PRESETS)) {
     const id = kitIds[key] ?? `brand-${key}`;
@@ -47,7 +51,7 @@ async function main() {
         tokensJson: JSON.stringify(preset.tokens),
       },
     });
-    if (key === "light-infographic") lightKitId = kit.id;
+    brandKitByPreset[key] = kit.id;
   }
 
   for (const slug of TEMPLATE_SLUGS) {
@@ -64,53 +68,55 @@ async function main() {
     });
   }
 
-  const existing = await prisma.post.findFirst({
-    where: { title: sampleCarousel.title },
-  });
+  let created = 0;
+  let skipped = 0;
 
-  if (!existing) {
+  for (const entry of SEED_CAROUSELS) {
+    const content = carouselSchema.parse(entry.content);
+    const brandKitId =
+      brandKitByPreset[entry.brandPresetKey] ?? brandKitByPreset["light-infographic"];
+
+    const existing = await prisma.post.findFirst({
+      where: { title: content.title },
+    });
+
+    if (existing) {
+      skipped += 1;
+      continue;
+    }
+
     await prisma.post.create({
       data: {
-        title: sampleCarousel.title,
-        topic: sampleCarousel.topic,
-        tags: JSON.stringify(sampleCarousel.tags),
+        title: content.title,
+        topic: content.topic,
+        tags: JSON.stringify(content.tags),
         status: "ready",
-        brandKitId: lightKitId,
+        origin: "template",
+        brandKitId,
         versions: {
           create: {
-            contentJson: JSON.stringify(sampleCarousel),
-            promptMeta: JSON.stringify({ source: "seed", arc: "contrast" }),
+            contentJson: JSON.stringify(content),
+            promptMeta: JSON.stringify({ source: "seed", arc: entry.arc }),
           },
         },
       },
     });
+    created += 1;
   }
 
-  const existingProcess = await prisma.post.findFirst({
-    where: { title: sampleProcessCarousel.title },
+  const seedTitles = SEED_CAROUSELS.map((e) => e.content.title);
+  const backfilled = await prisma.post.updateMany({
+    where: { title: { in: seedTitles } },
+    data: { origin: "template" },
   });
-
-  if (!existingProcess) {
-    await prisma.post.create({
-      data: {
-        title: sampleProcessCarousel.title,
-        topic: sampleProcessCarousel.topic,
-        tags: JSON.stringify(sampleProcessCarousel.tags),
-        status: "ready",
-        brandKitId: lightKitId,
-        versions: {
-          create: {
-            contentJson: JSON.stringify(sampleProcessCarousel),
-            promptMeta: JSON.stringify({ source: "seed", arc: "process" }),
-          },
-        },
-      },
-    });
-  }
 
   console.log("Seed OK:", {
     brandKits: Object.keys(BRAND_PRESETS).length,
     templates: TEMPLATE_SLUGS.length,
+    seedCarousels: SEED_CAROUSELS.length,
+    created,
+    skipped,
+    originBackfilled: backfilled.count,
   });
 }
 
