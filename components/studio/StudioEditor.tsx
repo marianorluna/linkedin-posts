@@ -8,7 +8,6 @@ import {
   useTransition,
   type RefObject,
 } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutEditProvider } from "@/components/slides/layout/LayoutEditContext";
 import { SlideRenderer } from "@/components/slides/SlideRenderer";
@@ -22,6 +21,9 @@ import {
   RepeatableItemShell,
 } from "@/components/studio/RepeatableItemsEditor";
 import { ItemTonePicker } from "@/components/studio/ItemTonePicker";
+import { SlidesRail } from "@/components/studio/SlidesRail";
+import { StudioChrome } from "@/components/studio/StudioChrome";
+import { StudioProperties } from "@/components/studio/StudioProperties";
 import { StylePanel, type BrandKitOption } from "@/components/studio/StylePanel";
 import { resolveEpisodeTokens } from "@/lib/domain/episode-visual";
 import { rectToSlideCoords, setSlot, slotsForTemplate } from "@/lib/domain/layout";
@@ -31,7 +33,6 @@ import { BRAND_PRESETS, SLIDE_SIZE, deepMergeBrandTokens } from "@/lib/design-to
 import type { IconId } from "@/lib/icons/registry";
 import type { SlotLayout } from "@/lib/schemas/layout";
 import type { CarouselContent, SlideContent, TemplateSlug } from "@/lib/schemas/carousel";
-import { TEMPLATE_SLUGS } from "@/lib/schemas/carousel";
 import { ITEM_TONE_CYCLES } from "@/lib/schemas/item-tone";
 import { defaultVariant, variantsFor } from "@/lib/schemas/variants";
 
@@ -231,6 +232,7 @@ export function StudioEditor({
   const [selectedKitId, setSelectedKitId] = useState<string | null>(initialBrandKitId);
   const [layoutEditMode, setLayoutEditMode] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [slotForIndex, setSlotForIndex] = useState(activeIndex);
 
   const activeSlide = content.slides[activeIndex];
   const episode = resolveEpisodeTokens(tokens, content.visual);
@@ -239,10 +241,10 @@ export function StudioEditor({
   const { scale, zoomFactor, zoomIn, zoomOut, resetZoom, canZoomIn, canZoomOut } =
     usePreviewScale(previewRef);
 
-  useEffect(() => {
+  if (slotForIndex !== activeIndex) {
+    setSlotForIndex(activeIndex);
     setSelectedSlot(null);
-  }, [activeIndex]);
-
+  }
   function updateActiveLayoutSlot(id: string, patch: SlotLayout) {
     setContent((prev) => {
       const slide = prev.slides[activeIndex];
@@ -461,334 +463,283 @@ export function StudioEditor({
     setMessage(`PDF listo (${data.pngCount} slides)`);
   }
 
-  return (
-    <div className="box-border h-dvh w-full overflow-hidden p-3 md:p-4">
-      <div
-        className={[
-          "grid h-full min-h-0 gap-3 md:gap-4",
-          "grid-rows-[minmax(0,26vh)_auto_minmax(0,1fr)]",
-          "md:grid-cols-[200px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]",
-          "lg:grid-cols-[240px_minmax(0,1fr)_minmax(280px,360px)] lg:grid-rows-1",
-        ].join(" ")}
+  const actionButtons = (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setLayoutEditMode((v) => {
+            const next = !v;
+            if (next && activeSlide) {
+              setSelectedSlot(slotsForTemplate(activeSlide.template)[0] ?? null);
+            } else {
+              setSelectedSlot(null);
+            }
+            return next;
+          });
+        }}
+        className={`min-h-11 rounded-full px-5 py-2.5 text-sm ${
+          layoutEditMode
+            ? "bg-[var(--accent)] font-medium text-[#0b1015]"
+            : "border border-[var(--panel-border)]"
+        }`}
       >
-        <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] md:row-span-2 lg:row-span-1">
-          <div className="studio-scroll min-h-0 flex-1 overflow-y-auto p-4">
-            <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--accent)]">
-              ← Galería
-            </Link>
-            <h2 className="mt-4 font-[family-name:var(--font-display)] text-lg">Slides</h2>
-            <ul className="mt-3 space-y-2">
-              {content.slides.map((slide, index) => (
-                <li key={`${slide.template}-${index}`}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveIndex(index)}
-                    className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-                      index === activeIndex
-                        ? "bg-[color-mix(in_srgb,var(--accent)_18%,transparent)] text-[var(--accent)]"
-                        : "bg-white/5 text-[var(--muted)] hover:bg-white/10"
-                    }`}
-                  >
-                    {index + 1}. {slide.template}
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
-                onClick={() => moveSlide(activeIndex, -1)}
-              >
-                Subir
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
-                onClick={() => moveSlide(activeIndex, 1)}
-              >
-                Bajar
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs"
-                onClick={() => {
-                  setContent((prev) => ({
-                    ...prev,
-                    slides: prev.slides.filter((_, i) => i !== activeIndex),
-                  }));
-                  setActiveIndex((i) => Math.max(0, i - 1));
-                }}
-                disabled={content.slides.length <= 2}
-              >
-                Quitar
-              </button>
-            </div>
-            <label className="mt-4 block text-xs text-[var(--muted)]">Añadir plantilla</label>
-            <select
-              className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-2 py-2 text-sm"
-              defaultValue=""
-              onChange={(e) => {
-                const value = e.target.value as TemplateSlug;
-                if (!value) return;
-                setContent((prev) => ({ ...prev, slides: [...prev.slides, emptySlide(value)] }));
-                setActiveIndex(content.slides.length);
-                e.target.value = "";
-              }}
-            >
-              <option value="">Elegir…</option>
-              {TEMPLATE_SLUGS.map((slug) => (
-                <option key={slug} value={slug}>
-                  {slug}
-                </option>
-              ))}
-            </select>
-          </div>
-        </aside>
+        {layoutEditMode ? "Layout ON" : "Editar layout"}
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => startTransition(() => void save())}
+        className="min-h-11 rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[#0b1015]"
+      >
+        Guardar versión
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => startTransition(() => void exportPdf())}
+        className="min-h-11 rounded-full border border-[var(--panel-border)] px-5 py-2.5 text-sm"
+      >
+        Crear PDF
+      </button>
+      {exportAssetId ? (
+        <a
+          href={`/api/assets/${exportAssetId}`}
+          className="inline-flex min-h-11 items-center rounded-full border border-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent)]"
+        >
+          Descargar PDF
+        </a>
+      ) : null}
+    </>
+  );
 
-        <section className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-black/40">
-          <div
-            className="pointer-events-none absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full border border-[var(--panel-border)] bg-[var(--panel)]/95 p-1 shadow-lg backdrop-blur-sm"
-            role="group"
-            aria-label="Zoom del preview"
-          >
-            <button
-              type="button"
-              disabled={!canZoomOut}
-              onClick={zoomOut}
-              className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-sm text-[var(--muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Alejar"
-              title="Alejar"
-            >
-              −
-            </button>
-            <button
-              type="button"
-              onClick={resetZoom}
-              className="pointer-events-auto min-w-[3.25rem] rounded-full px-2 py-1 font-[family-name:var(--font-mono)] text-xs tabular-nums text-[var(--accent)] transition hover:bg-white/10"
-              aria-label="Restablecer zoom al ajuste"
-              title="Ajustar al panel"
-            >
-              {Math.round(zoomFactor * 100)}%
-            </button>
-            <button
-              type="button"
-              disabled={!canZoomIn}
-              onClick={zoomIn}
-              className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-sm text-[var(--muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Acercar"
-              title="Acercar"
-            >
-              +
-            </button>
-          </div>
-          <div
-            ref={previewRef}
-            className="studio-scroll flex min-h-0 flex-1 flex-col items-center overflow-auto p-4"
-          >
-            <div
-              className="relative mx-auto shrink-0 overflow-hidden rounded-xl"
-              style={{
-                width: SLIDE_SIZE * scale,
-                height: SLIDE_SIZE * scale,
-              }}
-            >
-              <LayoutOverlay
-                enabled={layoutEditMode}
-                onBackgroundClick={() => setSelectedSlot(null)}
-              />
-              <div
-                ref={slideFrameRef}
-                style={{
-                  width: SLIDE_SIZE,
-                  height: SLIDE_SIZE,
-                  transform: `scale(${scale})`,
-                  transformOrigin: "top left",
-                }}
-              >
-                {activeSlide ? (
-                  <LayoutEditProvider
-                    value={{
-                      editMode: layoutEditMode,
-                      selectedSlot,
-                      selectSlot: setSelectedSlot,
-                      updateSlot: updateActiveLayoutSlot,
-                      measureFrame: () => {
-                        const frame = slideFrameRef.current?.querySelector(
-                          "[data-slide-frame]",
-                        ) as HTMLElement | null;
-                        return frame?.getBoundingClientRect() ?? null;
-                      },
-                    }}
-                  >
-                    <SlideRenderer
-                      slide={activeSlide}
-                      tokens={episode.tokens}
-                      motif={episode.motif}
-                      contrast={episode.contrast}
-                      legacyMoodDecor={episode.legacyMoodDecor}
-                    />
-                  </LayoutEditProvider>
-                ) : null}
-              </div>
-            </div>
-          </div>
-          <div className="shrink-0 space-y-3 border-t border-[var(--panel-border)] p-4">
-            {message ? <p className="text-center text-sm text-[var(--accent)]">{message}</p> : null}
-            <div className="flex flex-wrap justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setLayoutEditMode((v) => {
-                    const next = !v;
-                    if (next && activeSlide) {
-                      setSelectedSlot(slotsForTemplate(activeSlide.template)[0] ?? null);
-                    } else {
-                      setSelectedSlot(null);
-                    }
-                    return next;
-                  });
-                }}
-                className={`rounded-full px-5 py-2.5 text-sm ${
-                  layoutEditMode
-                    ? "bg-[var(--accent)] font-medium text-[#0b1015]"
-                    : "border border-[var(--panel-border)]"
-                }`}
-              >
-                {layoutEditMode ? "Layout ON" : "Editar layout"}
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => startTransition(() => void save())}
-                className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[#0b1015]"
-              >
-                Guardar versión
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => startTransition(() => void exportPdf())}
-                className="rounded-full border border-[var(--panel-border)] px-5 py-2.5 text-sm"
-              >
-                Crear PDF
-              </button>
-              {exportAssetId ? (
-                <a
-                  href={`/api/assets/${exportAssetId}`}
-                  className="rounded-full border border-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent)]"
-                >
-                  Descargar PDF
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </section>
-
-        <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] md:col-start-2 md:row-start-2 lg:col-start-auto lg:row-start-auto">
-          <div className="studio-scroll min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
-            <CollapsibleSection title="Contenido" defaultOpen>
-              <div>
-                <label className="text-xs text-[var(--muted)]">Brief / tema</label>
-                <textarea
-                  value={brief}
-                  onChange={(e) => setBrief(e.target.value)}
-                  rows={3}
-                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => startTransition(() => void generate())}
-                  className="mt-2 w-full rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
-                >
-                  Generar con IA
-                </button>
-              </div>
-
-              <div>
-                <label className="text-xs text-[var(--muted)]">Título del post</label>
-                <input
-                  value={content.title}
-                  onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-[var(--muted)]">Topic</label>
-                <input
-                  value={content.topic}
-                  onChange={(e) => setContent((c) => ({ ...c, topic: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-[var(--muted)]">Tags (coma)</label>
-                <input
-                  value={content.tags.join(", ")}
-                  onChange={(e) =>
-                    setContent((c) => ({
-                      ...c,
-                      tags: e.target.value
-                        .split(",")
-                        .map((t) => t.trim())
-                        .filter(Boolean),
-                    }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
-                />
-              </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection
-              title="Estilo / BrandKit"
-              hint="Los cambios de estilo se guardan en el BrandKit al editar colores o al Guardar."
-            >
-              <StylePanel
-                tokens={tokens}
-                kits={kits}
-                presets={presets}
-                selectedKitId={selectedKitId}
-                onTokensChange={(next) => void persistTokens(next)}
-                onSelectKit={(id) => void selectKit(id)}
-                onApplyPreset={(key) => void applyPreset(key)}
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection
-              title="Episodio"
-              hint="Motivo y acento de este carrusel; no altera el BrandKit guardado."
-            >
-              <EpisodePanel
-                visual={content.visual}
-                onChange={(visual) => setContent((c) => ({ ...c, visual }))}
-              />
-            </CollapsibleSection>
-
-            {activeSlide && layoutEditMode ? (
-              <CollapsibleSection title="Layout del slot">
-                <LayoutPanel
-                  slide={activeSlide}
-                  selectedSlot={selectedSlot}
-                  onSelectSlot={setSelectedSlot}
-                  onChange={(slide) => updateSlide(activeIndex, slide)}
-                  measureSlot={measureSlot}
-                />
-              </CollapsibleSection>
-            ) : null}
-
-            {activeSlide ? (
-              <CollapsibleSection title={`Slide: ${activeSlide.template}`}>
-                <SlideFields
-                  slide={activeSlide}
-                  tokens={tokens}
-                  onChange={(slide) => updateSlide(activeIndex, slide)}
-                />
-              </CollapsibleSection>
-            ) : null}
-          </div>
-        </aside>
+  const previewBody = (
+    <>
+      <div
+        className="pointer-events-none absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full border border-[var(--panel-border)] bg-[var(--panel)]/95 p-1 shadow-lg backdrop-blur-sm"
+        role="group"
+        aria-label="Zoom del preview"
+      >
+        <button
+          type="button"
+          disabled={!canZoomOut}
+          onClick={zoomOut}
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-sm text-[var(--muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 md:h-8 md:w-8"
+          aria-label="Alejar"
+          title="Alejar"
+        >
+          −
+        </button>
+        <button
+          type="button"
+          onClick={resetZoom}
+          className="pointer-events-auto min-h-11 min-w-[3.25rem] rounded-full px-2 py-1 font-[family-name:var(--font-mono)] text-xs tabular-nums text-[var(--accent)] transition hover:bg-white/10 md:min-h-0"
+          aria-label="Restablecer zoom al ajuste"
+          title="Ajustar al panel"
+        >
+          {Math.round(zoomFactor * 100)}%
+        </button>
+        <button
+          type="button"
+          disabled={!canZoomIn}
+          onClick={zoomIn}
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-sm text-[var(--muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35 md:h-8 md:w-8"
+          aria-label="Acercar"
+          title="Acercar"
+        >
+          +
+        </button>
       </div>
-    </div>
+      <div
+        ref={previewRef}
+        className="studio-scroll flex min-h-0 flex-1 flex-col items-center overflow-auto p-4"
+      >
+        <div
+          className="relative mx-auto shrink-0 overflow-hidden rounded-xl"
+          style={{
+            width: SLIDE_SIZE * scale,
+            height: SLIDE_SIZE * scale,
+          }}
+        >
+          <LayoutOverlay
+            enabled={layoutEditMode}
+            onBackgroundClick={() => setSelectedSlot(null)}
+          />
+          <div
+            ref={slideFrameRef}
+            style={{
+              width: SLIDE_SIZE,
+              height: SLIDE_SIZE,
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            {activeSlide ? (
+              <LayoutEditProvider
+                value={{
+                  editMode: layoutEditMode,
+                  selectedSlot,
+                  selectSlot: setSelectedSlot,
+                  updateSlot: updateActiveLayoutSlot,
+                  measureFrame: () => {
+                    const frame = slideFrameRef.current?.querySelector(
+                      "[data-slide-frame]",
+                    ) as HTMLElement | null;
+                    return frame?.getBoundingClientRect() ?? null;
+                  },
+                }}
+              >
+                <SlideRenderer
+                  slide={activeSlide}
+                  tokens={episode.tokens}
+                  motif={episode.motif}
+                  contrast={episode.contrast}
+                  legacyMoodDecor={episode.legacyMoodDecor}
+                />
+              </LayoutEditProvider>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <StudioChrome
+      slideLabel={
+        activeSlide
+          ? `${activeIndex + 1}/${content.slides.length} · ${activeSlide.template}`
+          : content.title || "Studio"
+      }
+      message={message}
+      actions={actionButtons}
+      preview={previewBody}
+      slidesRail={({ closeSlides, inDrawer }) => (
+        <SlidesRail
+          slides={content.slides}
+          activeIndex={activeIndex}
+          showGalleryLink={!inDrawer}
+          onSelect={(index) => {
+            setActiveIndex(index);
+            closeSlides();
+          }}
+          onMove={moveSlide}
+          onRemove={() => {
+            setContent((prev) => ({
+              ...prev,
+              slides: prev.slides.filter((_, i) => i !== activeIndex),
+            }));
+            setActiveIndex((i) => Math.max(0, i - 1));
+          }}
+          onAdd={(value) => {
+            setContent((prev) => ({ ...prev, slides: [...prev.slides, emptySlide(value)] }));
+            setActiveIndex(content.slides.length);
+          }}
+        />
+      )}
+      properties={
+        <StudioProperties>
+          <CollapsibleSection title="Contenido" defaultOpen>
+            <div>
+              <label className="text-xs text-[var(--muted)]">Brief / tema</label>
+              <textarea
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                rows={3}
+                className="mt-1 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => startTransition(() => void generate())}
+                className="mt-2 min-h-11 w-full rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
+              >
+                Generar con IA
+              </button>
+            </div>
+
+            <div>
+              <label className="text-xs text-[var(--muted)]">Título del post</label>
+              <input
+                value={content.title}
+                onChange={(e) => setContent((c) => ({ ...c, title: e.target.value }))}
+                className="mt-1 min-h-11 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">Topic</label>
+              <input
+                value={content.topic}
+                onChange={(e) => setContent((c) => ({ ...c, topic: e.target.value }))}
+                className="mt-1 min-h-11 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">Tags (coma)</label>
+              <input
+                value={content.tags.join(", ")}
+                onChange={(e) =>
+                  setContent((c) => ({
+                    ...c,
+                    tags: e.target.value
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean),
+                  }))
+                }
+                className="mt-1 min-h-11 w-full rounded-lg border border-[var(--panel-border)] bg-[#0b1015] px-3 py-2 text-sm"
+              />
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Estilo / BrandKit"
+            hint="Los cambios de estilo se guardan en el BrandKit al editar colores o al Guardar."
+          >
+            <StylePanel
+              tokens={tokens}
+              kits={kits}
+              presets={presets}
+              selectedKitId={selectedKitId}
+              onTokensChange={(next) => void persistTokens(next)}
+              onSelectKit={(id) => void selectKit(id)}
+              onApplyPreset={(key) => void applyPreset(key)}
+            />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Episodio"
+            hint="Motivo y acento de este carrusel; no altera el BrandKit guardado."
+          >
+            <EpisodePanel
+              visual={content.visual}
+              onChange={(visual) => setContent((c) => ({ ...c, visual }))}
+            />
+          </CollapsibleSection>
+
+          {activeSlide && layoutEditMode ? (
+            <CollapsibleSection title="Layout del slot">
+              <LayoutPanel
+                slide={activeSlide}
+                selectedSlot={selectedSlot}
+                onSelectSlot={setSelectedSlot}
+                onChange={(slide) => updateSlide(activeIndex, slide)}
+                measureSlot={measureSlot}
+              />
+            </CollapsibleSection>
+          ) : null}
+
+          {activeSlide ? (
+            <CollapsibleSection title={`Slide: ${activeSlide.template}`}>
+              <SlideFields
+                slide={activeSlide}
+                tokens={tokens}
+                onChange={(slide) => updateSlide(activeIndex, slide)}
+              />
+            </CollapsibleSection>
+          ) : null}
+        </StudioProperties>
+      }
+    />
   );
 }
 

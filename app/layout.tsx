@@ -8,7 +8,7 @@ import {
   Space_Grotesk,
   Syne,
 } from "next/font/google";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import "./globals.css";
 
@@ -63,6 +63,12 @@ const plex = IBM_Plex_Sans({
 export const metadata: Metadata = {
   title: "Studio Infografías LinkedIn",
   description: "Carruseles 1080×1080 con estilo propio y export PDF",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

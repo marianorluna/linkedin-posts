@@ -16,10 +16,11 @@ export function LayoutOverlay({ enabled, onBackgroundClick }: Props) {
     >
       <button
         type="button"
-        className="pointer-events-auto absolute left-2 top-2 rounded-md bg-[var(--accent)] px-2 py-1 text-[11px] font-medium text-[#0b1015]"
+        className="pointer-events-auto absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-[var(--accent)] px-2 py-1 text-[11px] font-medium text-[#0b1015]"
         onClick={onBackgroundClick}
       >
-        Editar layout · click vacío para deseleccionar
+        <span className="sm:hidden">Layout · tap vacío</span>
+        <span className="hidden sm:inline">Editar layout · click vacío para deseleccionar</span>
       </button>
     </div>
   );

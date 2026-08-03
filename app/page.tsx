@@ -1,15 +1,10 @@
 import Link from "next/link";
+import { GalleryHeader } from "@/components/studio/GalleryHeader";
 import { PostCard } from "@/components/studio/PostCard";
 import { HOME_PAGE_SIZE, parseOriginFilter, type PostOriginFilter } from "@/lib/domain/post";
 import { listPostsPage } from "@/lib/domain/post-service";
 
 export const dynamic = "force-dynamic";
-
-const FILTERS: { id: PostOriginFilter; label: string }[] = [
-  { id: "all", label: "Todos" },
-  { id: "template", label: "Plantillas" },
-  { id: "user", label: "Propios" },
-];
 
 function hrefFor(filter: PostOriginFilter, page: number) {
   const params = new URLSearchParams();
@@ -36,52 +31,8 @@ export default async function HomePage({ searchParams }: PageProps) {
   });
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden px-4 py-4 md:px-6">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 pb-3">
-        <div className="min-w-0">
-          <p className="font-[family-name:var(--font-mono)] text-[10px] tracking-[0.2em] text-[var(--accent)] uppercase">
-            Studio LinkedIn
-          </p>
-          <div className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="font-[family-name:var(--font-display)] text-2xl tracking-tight md:text-3xl">
-              Carruseles
-            </h1>
-            <p className="text-xs text-[var(--muted)] md:text-sm">
-              {result.total} en total · {HOME_PAGE_SIZE}/página
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <nav
-            className="flex rounded-full border border-[var(--panel-border)] bg-[var(--panel)] p-0.5"
-            aria-label="Filtrar por origen"
-          >
-            {FILTERS.map((item) => {
-              const active = filter === item.id;
-              return (
-                <Link
-                  key={item.id}
-                  href={hrefFor(item.id, 1)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                    active
-                      ? "bg-[var(--accent)] text-[#0b1015]"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <Link
-            href="/posts/new"
-            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[#0b1015] transition hover:brightness-110"
-          >
-            Nuevo carrusel
-          </Link>
-        </div>
-      </header>
+    <div className="fixed inset-0 flex flex-col overflow-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] md:px-6">
+      <GalleryHeader filter={filter} total={result.total} pageSize={HOME_PAGE_SIZE} />
 
       {result.total === 0 ? (
         <div className="flex min-h-0 flex-1 items-center justify-center rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-8 text-sm text-[var(--muted)]">
@@ -99,9 +50,9 @@ export default async function HomePage({ searchParams }: PageProps) {
           )}
         </div>
       ) : (
-        <ul className="grid min-h-0 flex-1 grid-cols-2 grid-rows-6 gap-4 overflow-hidden md:grid-cols-3 md:grid-rows-4 lg:grid-cols-6 lg:grid-rows-2">
+        <ul className="studio-scroll grid min-h-0 flex-1 auto-rows-max grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           {result.items.map((post) => (
-            <li key={post.id} className="min-h-0 min-w-0">
+            <li key={post.id} className="min-h-0">
               <PostCard post={post} />
             </li>
           ))}
@@ -116,24 +67,24 @@ export default async function HomePage({ searchParams }: PageProps) {
           {result.page > 1 ? (
             <Link
               href={hrefFor(filter, result.page - 1)}
-              className="rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              className="inline-flex min-h-11 items-center rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Anterior
             </Link>
           ) : (
-            <span className="rounded-full border border-transparent px-3 py-1.5 opacity-40">
+            <span className="inline-flex min-h-11 items-center rounded-full border border-transparent px-3 py-1.5 opacity-40">
               Anterior
             </span>
           )}
           {result.page < result.totalPages ? (
             <Link
               href={hrefFor(filter, result.page + 1)}
-              className="rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              className="inline-flex min-h-11 items-center rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               Siguiente
             </Link>
           ) : (
-            <span className="rounded-full border border-transparent px-3 py-1.5 opacity-40">
+            <span className="inline-flex min-h-11 items-center rounded-full border border-transparent px-3 py-1.5 opacity-40">
               Siguiente
             </span>
           )}

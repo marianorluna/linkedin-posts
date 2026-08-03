@@ -104,23 +104,23 @@ export function PostCard({ post }: PostCardProps) {
         </Link>
       ) : null}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-1 p-2">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-1.5 p-2.5">
         <div className="min-w-0">
-          <div className="flex items-start justify-between gap-1">
-            <h2 className="line-clamp-2 min-w-0 font-[family-name:var(--font-display)] text-[11px] leading-snug tracking-tight">
+          <div className="flex items-start justify-between gap-1.5">
+            <h2 className="line-clamp-2 min-w-0 font-[family-name:var(--font-display)] text-sm leading-snug tracking-tight">
               <Link href={`/posts/${post.id}`} className="hover:text-[var(--accent)]">
                 {post.title}
               </Link>
             </h2>
-            <span className="shrink-0 rounded-full border border-[var(--panel-border)] px-1.5 py-0.5 text-[9px] text-[var(--muted)]">
+            <span className="shrink-0 rounded-full border border-[var(--panel-border)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
               {post.origin === "template" ? "kit" : post.status}
             </span>
           </div>
-          <p className="mt-0.5 line-clamp-1 text-[10px] text-[var(--muted)]">{post.topic}</p>
+          <p className="mt-1 line-clamp-2 text-xs leading-snug text-[var(--muted)]">{post.topic}</p>
         </div>
 
-        <div className="flex items-center justify-between gap-1">
-          <span className="truncate text-[9px] text-[var(--muted)]">
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <span className="min-w-0 truncate text-[11px] text-[var(--muted)]">
             {post.slideCount}·{post.versionCount}v
             {visibleTags.map((tag) => (
               <span key={tag} className="text-[var(--accent)]">
@@ -130,12 +130,12 @@ export function PostCard({ post }: PostCardProps) {
             ))}
             {extraTags > 0 ? ` +${extraTags}` : ""}
           </span>
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-1">
             <Link
               href={`/posts/${post.id}`}
               title="Editar"
               aria-label="Editar"
-              className="inline-flex items-center justify-center rounded-full border border-[var(--panel-border)] p-1 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--panel-border)] text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               <EditIcon />
             </Link>
@@ -145,7 +145,7 @@ export function PostCard({ post }: PostCardProps) {
               disabled={isPending || action !== null}
               title="Duplicar"
               aria-label="Duplicar"
-              className="inline-flex items-center justify-center rounded-full border border-[var(--panel-border)] p-1 text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--panel-border)] text-[var(--foreground)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
             >
               <DuplicateIcon />
             </button>
@@ -155,13 +155,13 @@ export function PostCard({ post }: PostCardProps) {
               disabled={isPending || action !== null}
               title="Eliminar"
               aria-label="Eliminar"
-              className="inline-flex items-center justify-center rounded-full border border-[var(--panel-border)] p-1 text-[var(--muted)] transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--panel-border)] text-[var(--muted)] transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-50"
             >
               <TrashIcon />
             </button>
           </div>
         </div>
-        {error ? <span className="text-[9px] text-red-300">{error}</span> : null}
+        {error ? <span className="text-[11px] text-red-300">{error}</span> : null}
       </div>
     </article>
   );

@@ -7,7 +7,7 @@ export type PostStatus = "draft" | "ready" | "archived";
 export type PostOrigin = "template" | "user";
 export type PostOriginFilter = "all" | PostOrigin;
 
-export const HOME_PAGE_SIZE = 12;
+export const HOME_PAGE_SIZE = 18;
 
 export function parseTags(raw: string): string[] {
   try {
